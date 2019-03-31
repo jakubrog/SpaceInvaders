@@ -127,6 +127,7 @@ class MainMenu:
                         index -= 1
                         self.option_select(index)
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    #other menu choices
                     if index == 3:
                         pygame.quit()
                         sys.exit()
