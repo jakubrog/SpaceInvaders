@@ -175,7 +175,7 @@ class MainMenu:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # other menu choices
                     if index == 0:
-                        ship, level = (1, 1)# after start there should be a function() -> tuple with ship and level
+                        ship, level = (1, 1)  # after start there should be a function() -> tuple with ship and level
                         return ship, level, music
                     if index == 1:
                         music = settings_menu_show()
@@ -195,7 +195,6 @@ class SpaceInvaders:
     def __init__(self):
         self.screen = gameDisplay
         self.menu = MainMenu()
-
     # main loop
     # def gameLoop:
     # while True:
