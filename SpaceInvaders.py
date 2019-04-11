@@ -11,6 +11,7 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 ORANGE = (255, 156, 0)
 GRAY = (105, 105, 105)
+YELLOW = (244, 226, 2)
 
 # names of created images
 IMG_NAMES = ['ship_1', 'bullet_1']
@@ -37,19 +38,19 @@ IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_al
 
 # single enemy ship
 class Enemy(pygame.sprite.Sprite):  # sprite - base class for visible game objects
-    def __init__(self):
+    def __init__(self, row, column):
         # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self)
         # self.image = IMAGES['image_filename']
+        self.row = row
+        self.column = column
 
 
 # Block or a group of enemies, it's responsible for changing position of each enemy and select their specification
 class GroupOfEnemies(pygame.sprite.Group):
-    def __init__(self, row, column):
+    def __init__(self, rows, columns):
         pygame.sprite.Group.__init__(self)
         # self.image = IMAGES['filename']
-        self.row = row
-        self.column = column
 
 
 # Bullet - display and keep information about shot bullet
@@ -86,7 +87,7 @@ class Ship(pygame.sprite.Sprite):
             self.rect.x += self.speed
 
     def shoot(self, bullets):
-        if len(bullets) < 2:  # max two bullets on screen at the same time
+        if len(bullets) < 4:  # max two bullets on screen at the same time
             left_bullet = Bullet(self.rect.x + 3, self.rect.y + 10, -1, 15, 'bullet_1')
             right_bullet = Bullet(self.rect.x + 57, self.rect.y + 10, -1, 15, 'bullet_1')
             # self.sounds['shoot'].play()
@@ -107,9 +108,14 @@ def settings_menu_show(background):
     about_font = pygame.font.Font(FONT, 25)
 
     music_label = font.render("Music", True, RED)
-    help_label = help_font.render("[ESC] - get back", True, ORANGE)
+    music_select = font.render("< ON >", True, YELLOW)
+
+    music_label = font.render("Sounds", True, GRAY)
     music_select = font.render("< ON >", True, GRAY)
+
     about = about_font.render("Created by Jakub Rog and Jan Makowiecki in 2019.", True, WHITE)
+    help_label = help_font.render("[ESC] - get back", True, ORANGE)
+
     music = True
 
     while True:
@@ -127,14 +133,176 @@ def settings_menu_show(background):
             if event.type == pygame.KEYDOWN:
                 if event.key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN]:
                     if music:
-                        music_select = font.render("< OFF >", True, GRAY)
+                        music_select = font.render("< OFF >", True, YELLOW)
                     else:
-                        music_select = font.render("< ON >", True, GRAY)
+                        music_select = font.render("< ON >", True, YELLOW)
                     music = not music
 
                 elif event.key == pygame.K_q or event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                     gameDisplay.fill(BLACK)
                     return music
+
+        pygame.display.update()
+        clock.tick(FPS)
+
+
+# not completed
+class Shop:
+    def _init_(self):
+        self.background = pygame.image.load(IMAGE_PATH + "shop.png").convert()
+        self.background = pygame.transform.scale(self.background, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+        gameDisplay.blit(self.background, (0, 0))
+        self.font = pygame.font.Font(FONT, 25)
+        self.index = 0
+        self.label0 = self.font.render("HP", True, RED)
+        self.label1 = self.font.render("DMG", True, WHITE)
+        self.label2 = self.font.render("SPEED", True, WHITE)
+        self.label3 = self.font.render("BULLETS", True, WHITE)
+        self.label4 = self.font.render("Continue", True, ORANGE)
+
+    def shop_upgrade_select(self, index):
+        self.label0 = self.font.render("HP", True, WHITE)
+        self.label1 = self.font.render("DMG", True, WHITE)
+        self.label2 = self.font.render("SPEED", True, WHITE)
+        self.label3 = self.font.render("BULLETS", True, WHITE)
+
+        if index == 0:
+            self.label0 = self.font.render("> HP", True, RED)
+        elif index == 1:
+            self.label1 = self.font.render("> DMG", True, RED)
+        elif index == 2:
+            self.label2 = self.font.render("> SPEED", True, RED)
+        elif index == 3:
+            self.label3 = self.font.render("> BULLETS", True, RED)
+        elif index == 4:
+            self.label4 = self.font.render("Continue", True, RED)
+
+        gameDisplay.blit(self.background, (0, 0))
+        gameDisplay.blit(self.label0, (100, 520))
+        gameDisplay.blit(self.label1, (100, 570))
+        gameDisplay.blit(self.label2, (100, 620))
+        gameDisplay.blit(self.label3, (100, 670))
+
+    def show(self, current_upgrades):
+        index = 0
+        self.shop_upgrade_select(index)
+        curr_hp = current_upgrades[0]
+        curr_dmg = current_upgrades[1]
+        curr_speed = current_upgrades[2]
+        curr_bullets = current_upgrades[3]
+
+        while True:
+            for event in pygame.event.get():
+
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+                    if index < 3:
+                        index += 1
+                        self.shop_upgrade_select(index)
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                    if index > 0:
+                        index -= 1
+                        self.shop_upgrade_select(index)
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    # other menu choices
+                    if index == 0:
+                        curr_hp += 1
+
+                    if index == 1:
+                        curr_dmg += 1
+
+                    if index == 2:
+                        curr_speed += 1
+
+                    if index == 3:
+                        curr_bullets += 1
+
+                    if index == 4:
+                        gameDisplay.blit(self.background, (0, 0))
+                        ship, level = (1, 1)
+                        return curr_hp, curr_dmg, curr_speed, curr_bullets
+
+            pygame.display.update()
+            clock.tick(FPS)
+
+
+# new feature
+def newgame_menu_show(background):
+    def menu_select(index2):
+        if index2 == 0:
+            return RED, WHITE, WHITE, GRAY, GRAY
+        if index2 == 1:
+            return WHITE, RED, WHITE, YELLOW, GRAY
+        if index2 == 2:
+            return WHITE, WHITE, RED, GRAY, YELLOW
+
+    font = pygame.font.Font(FONT, 25)
+    back_font = pygame.font.Font(FONT, 17)
+    index2 = 0
+
+    ship = 1
+    diff = 1
+
+    label20 = font.render("Start", True, RED)
+    label21 = font.render("Ship", True, WHITE)
+    label22 = font.render("Difficulty", True, WHITE)
+
+    ship_select = font.render("< Ship1 >", True, GRAY)
+    diff_select = font.render("< Easy >", True, GRAY)
+
+    back_label = back_font.render("[ESC] - get back", True, ORANGE)
+
+    while True:
+        gameDisplay.blit(background, (0, 0))
+
+        gameDisplay.blit(label20, (100, 520))
+        gameDisplay.blit(label21, (100, 570))
+        gameDisplay.blit(label22, (100, 620))
+
+        gameDisplay.blit(ship_select, (400, 570))
+        gameDisplay.blit(diff_select, (400, 620))
+        gameDisplay.blit(back_label, (10, 730))
+
+        sel = ()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+                if index2 < 2:
+                    index2 += 1
+                    del sel
+                    sel = menu_select(index2)
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                if index2 > 0:
+                    index2 -= 1
+                    del sel
+                    sel = menu_select(index2)
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                if index2 == 0:
+                    return ship, diff
+
+            # back
+            if event.type == pygame.KEYDOWN and event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                gameDisplay.fill(BLACK)
+                return -1, -1
+
+        if sel:
+            label20 = font.render("Start", True, sel[0])
+            label21 = font.render("Ship", True, sel[1])
+            label22 = font.render("Difficulty", True, sel[2])
+
+            ship_select = font.render("< Ship1 >", True, sel[3])
+            diff_select = font.render("< Easy >", True, sel[4])
+        del sel
 
         pygame.display.update()
         clock.tick(FPS)
@@ -178,8 +346,8 @@ class MainMenu:
         index = 0
         self.menu_option_select(index)
         music = True
-        level = 0
-        ship = 0
+        # level = 0
+        # ship = 0
 
         while True:
             for event in pygame.event.get():
@@ -201,9 +369,14 @@ class MainMenu:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # other menu choices
                     if index == 0:
-                        gameDisplay.blit(self.background, (0, 0))
-                        ship, level = (1, 1)  # after start there should be a function() -> tuple with ship and level
-                        return ship, level, music
+                        diff, ship = newgame_menu_show(self.background)
+                        if diff != (-1):
+                            return music, diff, ship
+                        self.menu_option_select(index)
+
+                    if index == 1:
+                        print("Highscores")
+                        #self.menu_option_select(index)
 
                     if index == 2:
                         music = settings_menu_show(self.background)
