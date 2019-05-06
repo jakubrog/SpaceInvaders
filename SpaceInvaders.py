@@ -12,14 +12,19 @@ RED = (255, 0, 0)
 ORANGE = (255, 156, 0)
 GRAY = (105, 105, 105)
 YELLOW = (244, 226, 2)
+GREEN = (0, 255, 0)
 
 # names of created images
-IMG_NAMES = ['ship_1', 'bullet_1']
+
 
 FPS = 15
 
 DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
+ENEMY_DEFAULT_POSITION = 65  # initial value for a new game
+ENEMY_MOVE_DOWN = 40
+ENEMIES_MINIMUM_HEIGHT = 400
+ENEMIES_MAX_BOTTOM = 250
 
 FONT = FONT_PATH + 'Minecraftia.ttf'
 
@@ -28,13 +33,18 @@ gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))  # Initia
 pygame.display.set_caption("Space Invaders")
 clock = pygame.time.Clock()
 
+IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy1_2',
+             'enemy2_1', 'enemy2_2',
+             'enemy3_1', 'enemy3_2']
+
 IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_alpha()
           for name in IMG_NAMES}
 
 
-# TODO: shrink images to reduce time of creating objects
+
 # TODO: ENEMIES: shoots, movement,
-# TODO: collisions
+# TODO: improve score counter
+# TODO: shrink images to reduce time of creating objects
 
 # single enemy ship
 class Enemy(pygame.sprite.Sprite):  # sprite - base class for visible game objects
@@ -44,13 +54,82 @@ class Enemy(pygame.sprite.Sprite):  # sprite - base class for visible game objec
         # self.image = IMAGES['image_filename']
         self.row = row
         self.column = column
+        self.index = 0
+        self.images = []
+        self.load_images()
+        self.image = self.images[self.index]
+        self.rect = self.image.get_rect()
+
+    def toggle_image(self):
+        self.index += 1
+        if self.index >= len(self.images):
+            self.index = 0
+        self.image = self.images[self.index]
+
+    def load_images(self):
+        images = {0: ['1_1', '1_1'],
+                  1: ['2_2', '2_1'],
+                  2: ['2_2', '2_1'],
+                  3: ['3_1', '3_2'],
+                  4: ['3_1', '3_2'],
+                  }
+
+        img1, img2 = (IMAGES['enemy{}'.format(img_num)] for img_num in images[self.row % 4])
+
+        self.images.append(pygame.transform.scale(img1, (70, 50)))
+        self.images.append(pygame.transform.scale(img2, (70, 50)))
+
+    def update(self, *args):
+        game.screen.blit(self.image, self.rect)
 
 
 # Block or a group of enemies, it's responsible for changing position of each enemy and select their specification
 class GroupOfEnemies(pygame.sprite.Group):
-    def __init__(self, rows, columns):
+    def __init__(self, rows, columns, startingPosition):
         pygame.sprite.Group.__init__(self)
-        # self.image = IMAGES['filename']
+        self.enemies = [[None] * columns for _ in range(rows)]
+        self.columns = columns
+        self.rows = rows
+
+        self.leftMoves = 30
+        self.rightMoves = 30  # how much is moving to one of sides
+        self.moveNumber = 15
+        self.leftAddMove = 0
+        self.rightAddMove = 0
+
+        self.moveTime = 100
+        self.direction = 1  # if direction is 1 then enemy is going to right
+        self.timer = pygame.time.get_ticks()
+        self.bottom = startingPosition + ((rows - 1) * 45) + 35
+        self._aliveColumns = list(range(columns))
+        self._leftAliveColumn = 0
+        self._rightAliveColumn = columns - 1
+
+    def update(self, currentTime):
+        if currentTime - self.timer > self.moveTime:
+            if self.direction == 1:
+                max_move = self.rightMoves + self.rightAddMove
+            else:
+                max_move = self.leftAddMove + self.leftMoves
+
+            if self.moveNumber >= max_move:
+                self.leftMoves = 30 + self.rightAddMove
+                self.rightMoves = 30 + self.leftAddMove
+                self.direction *= -1
+                self.moveNumber = 0
+                self.bottom = 0
+                for enemy in self:
+                    enemy.rect_y += ENEMY_MOVE_DOWN
+                    enemy.toggle_image()
+                    if self.bottom < enemy.rect.y + 35:
+                        self.bottom = enemy.rect.y + 35
+            else:
+                velocity = 10 if self.direction == 1 else -10
+                for enemy in self:
+                    enemy.rect.x += velocity
+                    enemy.toggle_image()
+                self.moveNumber += 1
+        self.timer += self.moveTime
 
 
 # Bullet - display and keep information about shot bullet
@@ -78,13 +157,15 @@ class Ship(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect(topleft=(DISPLAY_WIDTH / 2 - 35, DISPLAY_HEIGHT - 80))
         self.speed = 5
+        self.health = Health()
 
-    def update(self, keys):
+    def update(self, keys, *args):
         gameDisplay.blit(self.image, self.rect)
         if keys[pygame.K_LEFT] and self.rect.x > 10:
             self.rect.x -= self.speed
         if keys[pygame.K_RIGHT] and self.rect.x < DISPLAY_WIDTH - 80:
             self.rect.x += self.speed
+        self.health.update()
 
     def shoot(self, bullets):
         if len(bullets) < 4:  # max two bullets on screen at the same time
@@ -95,11 +176,23 @@ class Ship(pygame.sprite.Sprite):
             bullets.add(right_bullet)
         return bullets
 
+    def hit(self, power):
+        self.health.hp -= power
+
 
 # Health - displaying HP point and health management
 class Health(pygame.sprite.Sprite):
-    def __init_(self):
+    def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        self.hp = 100
+
+    def update(self):
+        font = pygame.font.Font(FONT, 20)
+        health_label = font.render("Hp:  " + str(self.hp), True, RED)
+        gameDisplay.blit(health_label, (DISPLAY_WIDTH - 120, 10))
+
+    def is_alive(self):
+        return self.hass > 0
 
 
 def settings_menu_show(background):
@@ -376,7 +469,7 @@ class MainMenu:
 
                     if index == 1:
                         print("Highscores")
-                        #self.menu_option_select(index)
+                        # self.menu_option_select(index)
 
                     if index == 2:
                         music = settings_menu_show(self.background)
@@ -396,22 +489,77 @@ class SpaceInvaders:
     def __init__(self):
         self.screen = gameDisplay
         self.menu = MainMenu()
-        self.ship = Ship()
-        self.allSprites = pygame.sprite.Group(self.ship)  # every item which is on screen should be here
+
         self.map = pygame.image.load(IMAGE_PATH + 'map1.png')
-        self.bullets = pygame.sprite.Group()  # every bullet is here and whole group is in allSpirites
 
-        # self.map = pygame.transform.scale(self.map, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+        #init objects
+        self.ship = Ship()
+        self.shipGroup = pygame.sprite.Group(self.ship)
+        self.bullets = pygame.sprite.Group()
+        self.enemies = self.make_enemies()
+        self.enemyBullets = pygame.sprite.Group()
+        self.allSprites = pygame.sprite.Group(self.shipGroup, self.enemies)
 
-    # main loop
-    # def gameLoop:
-    # while True:
+        # helpers
+        self.enemyPosition = ENEMY_DEFAULT_POSITION  # starting enemies position, increasing each round
+        self.gameOver = True
+        self.score = 0
+        self.bottom = 300
+
+
+        # texts
+        self.font = pygame.font.Font(FONT, 35)
+        self.scoreFont = pygame.font.Font(FONT, 20)
+        self.gameOverText = self.font.render("Game Over", True, RED)
+        self.nextRoundText = self.font.render('Next Round', True, WHITE)
+        self.scoreText = self.font.render("Score:"+str(self.score), True, GREEN)
+
+    def make_enemies(self):
+        enemies = GroupOfEnemies(10, 5, ENEMY_DEFAULT_POSITION)
+        for row in range(4):
+            for column in range(9):
+                enemy = Enemy(row, column)
+                enemy.rect.x = 170 + (column * 80)
+                enemy.rect.y = ENEMY_DEFAULT_POSITION + (row * 120)
+                enemies.add(enemy)
+        return enemies
+
+    def calculate_score(self, row):
+        if self.score != 0:
+            self.score = self.score + 10 * row
+        else:
+            self.score = 10 * row
+
+
+    def check_collisions(self):
+        pygame.sprite.groupcollide(self.bullets, self.enemyBullets, True, True)
+
+        for enemy in pygame.sprite.groupcollide(self.enemies, self.bullets,
+                                                 True, True).keys():
+            self.calculate_score(enemy.row)
+            print(self.score)
+
+        for player in pygame.sprite.groupcollide(self.shipGroup, self.enemyBullets,
+                                          True, True).keys():
+            self.ship.hit(10) # change to real power
+
+            if not self.ship.health.is_alive():
+                self.gameOver = True
+
+        if self.enemies.bottom >= ENEMIES_MAX_BOTTOM:
+            self.gameOver = True
 
     # main function
+
     def main(self):
         ship, diff_level, music = self.menu.show()
         while True:
+            if self.gameOver:
+                #ship, diff_level, music = self.menu.show()
+                self.gameOver = False
             gameDisplay.blit(self.map, (0, 0))  # map load
+            self.scoreText = self.scoreFont.render("Score:  " + str(self.score), True, GREEN)
+            gameDisplay.blit(self.scoreText, (10, 10))
             keys = pygame.key.get_pressed()
 
             for event in pygame.event.get():
@@ -423,10 +571,12 @@ class SpaceInvaders:
                         self.bullets = self.ship.shoot(self.bullets)
                         self.allSprites.add(self.bullets)
 
-            self.allSprites.update(keys)  # update every element
+            self.check_collisions()
+            self.allSprites.update(keys, pygame.time.get_ticks())
 
             pygame.display.update()
             clock.tick(60)
+
 
 
 if __name__ == '__main__':
