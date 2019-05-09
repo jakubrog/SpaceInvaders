@@ -7,6 +7,7 @@ BASE_PATH = abspath(dirname(__file__))
 IMAGE_PATH = BASE_PATH + '/images/'
 FONT_PATH = BASE_PATH + '/fonts/'
 
+# colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -15,25 +16,30 @@ GRAY = (105, 105, 105)
 YELLOW = (244, 226, 2)
 GREEN = (0, 255, 0)
 
-# names of created images
-
+# game details
 
 FPS = 15
-
 DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
+
+# other details
 ENEMY_DEFAULT_POSITION = 50  # initial value for a new game
 ENEMY_MOVE_DOWN = 25
 MAX_BULLETS = 2 # on the screen at the same time
 SHOOT_FREQ = 1000
 
-FONT = FONT_PATH + 'Minecraftia.ttf'
+#testing
+# MAX_BULLETS = 16 # on the screen at the same time
+# SHOOT_FREQ = 500
 
 pygame.init()  # initialize all imported pygame modules
 gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))  # Initialize a window for display
 pygame.display.set_caption("Space Invaders")
 clock = pygame.time.Clock()
 
+FONT = FONT_PATH + 'Minecraftia.ttf' # basic font
+
+# names of created images
 IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy1_2',
              'enemy2_1', 'enemy2_2',
              'enemy3_1', 'enemy3_2']
@@ -44,6 +50,40 @@ IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_al
 # TODO: change enemies photos, shrink images to reduce time of creating objects
 # TODO: fix shop
 # TODO: exposions after hit and sounds
+
+
+# --------------------Sprites-------------------
+
+# main character
+class Ship(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = IMAGES['ship_1']
+        self.image = pygame.transform.scale(self.image, (70, 70))
+        self.rect = self.image.get_rect(topleft=(DISPLAY_WIDTH / 2 - 35, DISPLAY_HEIGHT - 80))
+        self.speed = 8
+        self.health = Health()
+
+    def update(self, keys, *args):
+        gameDisplay.blit(self.image, self.rect)
+        if keys[pygame.K_LEFT] and self.rect.x > 10:
+            self.rect.x -= self.speed
+        if keys[pygame.K_RIGHT] and self.rect.x < DISPLAY_WIDTH - 80:
+            self.rect.x += self.speed
+        self.health.update()
+
+    def shoot(self, bullets):
+        if len(bullets) < MAX_BULLETS:  # max two bullets on screen at the same time
+            left_bullet = Bullet(self.rect.x + 3, self.rect.y + 10, -1, 15, 'bullet_1')
+            right_bullet = Bullet(self.rect.x + 57, self.rect.y + 10, -1, 15, 'bullet_1')
+            # self.sounds['shoot'].play()
+            bullets.add(left_bullet)
+            bullets.add(right_bullet)
+        return bullets
+
+    def hit(self, power):
+        print(self.health.hp)
+        self.health.hp -= 10*power
 
 
 # single enemy ship
@@ -211,36 +251,6 @@ class Bullet(pygame.sprite.Sprite):
             self.kill()
 
 
-class Ship(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = IMAGES['ship_1']
-        self.image = pygame.transform.scale(self.image, (70, 70))
-        self.rect = self.image.get_rect(topleft=(DISPLAY_WIDTH / 2 - 35, DISPLAY_HEIGHT - 80))
-        self.speed = 8
-        self.health = Health()
-
-    def update(self, keys, *args):
-        gameDisplay.blit(self.image, self.rect)
-        if keys[pygame.K_LEFT] and self.rect.x > 10:
-            self.rect.x -= self.speed
-        if keys[pygame.K_RIGHT] and self.rect.x < DISPLAY_WIDTH - 80:
-            self.rect.x += self.speed
-        self.health.update()
-
-    def shoot(self, bullets):
-        if len(bullets) < MAX_BULLETS:  # max two bullets on screen at the same time
-            left_bullet = Bullet(self.rect.x + 3, self.rect.y + 10, -1, 15, 'bullet_1')
-            right_bullet = Bullet(self.rect.x + 57, self.rect.y + 10, -1, 15, 'bullet_1')
-            # self.sounds['shoot'].play()
-            bullets.add(left_bullet)
-            bullets.add(right_bullet)
-        return bullets
-
-    def hit(self, power):
-        print(self.health.hp)
-        self.health.hp -= 10*power
-
 
 # Health - displaying HP point and health management
 class Health(pygame.sprite.Sprite):
@@ -257,6 +267,9 @@ class Health(pygame.sprite.Sprite):
         return self.hp > 0
 
 
+
+# ---------------------- Menus----------------------
+
 def settings_menu_show(background):
     font = pygame.font.Font(FONT, 35)
     help_font = pygame.font.Font(FONT, 17)
@@ -265,8 +278,9 @@ def settings_menu_show(background):
     music_label = font.render("Music", True, RED)
     music_select = font.render("< ON >", True, YELLOW)
 
-    music_label = font.render("Sounds", True, GRAY)
-    music_select = font.render("< ON >", True, GRAY)
+    
+    # sound_label = font.render("Sounds", True, GRAY)
+    # sound_select = font.render("< ON >", True, GRAY)
 
     about = about_font.render("Created by Jakub Rog and Jan Makowiecki in 2019.", True, WHITE)
     help_label = help_font.render("[ESC] - get back", True, ORANGE)
@@ -303,7 +317,10 @@ def settings_menu_show(background):
 
 # not completed
 class Shop:
+    upgrades = (1,1,1,1)
+
     def __init__(self):
+        # upgrades = (1,1,1,1)
         self.background = pygame.image.load(IMAGE_PATH + "shop.png").convert()
         self.background = pygame.transform.scale(self.background, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
         gameDisplay.blit(self.background, (0, 0))
@@ -315,37 +332,78 @@ class Shop:
         self.label3 = self.font.render("BULLETS", True, WHITE)
         self.label4 = self.font.render("Continue", True, ORANGE)
 
+        self.stat0 = self.font.render(str(self.upgrades[0]), True, YELLOW)
+        self.stat1 = self.font.render(str(self.upgrades[1]), True, WHITE)
+        self.stat2 = self.font.render(str(self.upgrades[2]), True, WHITE)
+        self.stat3 = self.font.render(str(self.upgrades[3]), True, WHITE)
+
     def shop_upgrade_select(self, index):
         self.label0 = self.font.render("HP", True, WHITE)
         self.label1 = self.font.render("DMG", True, WHITE)
         self.label2 = self.font.render("SPEED", True, WHITE)
         self.label3 = self.font.render("BULLETS", True, WHITE)
+        self.label4 = self.font.render("Continue", True, ORANGE)
+
+        self.stat0 = self.font.render(str(self.upgrades[0]), True, WHITE)
+        self.stat1 = self.font.render(str(self.upgrades[1]), True, WHITE)
+        self.stat2 = self.font.render(str(self.upgrades[2]), True, WHITE)
+        self.stat3 = self.font.render(str(self.upgrades[3]), True, WHITE)
 
         if index == 0:
             self.label0 = self.font.render("> HP", True, RED)
+            self.stat0 = self.font.render(str(self.upgrades[0]) + " +", True, YELLOW)
         elif index == 1:
             self.label1 = self.font.render("> DMG", True, RED)
+            self.stat1 = self.font.render(str(self.upgrades[1]) + " +", True, YELLOW)
         elif index == 2:
             self.label2 = self.font.render("> SPEED", True, RED)
+            self.stat2 = self.font.render(str(self.upgrades[2]) + " +", True, YELLOW)
         elif index == 3:
             self.label3 = self.font.render("> BULLETS", True, RED)
+            self.stat3 = self.font.render(str(self.upgrades[3]) + " +", True, YELLOW)
         elif index == 4:
             self.label4 = self.font.render("Continue", True, RED)
 
         gameDisplay.blit(self.background, (0, 0))
-        gameDisplay.blit(self.label0, (100, 520))
-        gameDisplay.blit(self.label1, (100, 570))
-        gameDisplay.blit(self.label2, (100, 620))
-        gameDisplay.blit(self.label3, (100, 670))
 
-    def show(self, current_upgrades):
+        gameDisplay.blit(self.label0, (100, 420))
+        gameDisplay.blit(self.label1, (100, 470))
+        gameDisplay.blit(self.label2, (100, 520))
+        gameDisplay.blit(self.label3, (100, 570))
+        gameDisplay.blit(self.label4, (150, 620))
+
+        gameDisplay.blit(self.stat0, (300, 420))
+        gameDisplay.blit(self.stat1, (300, 470))
+        gameDisplay.blit(self.stat2, (300, 520))
+        gameDisplay.blit(self.stat3, (300, 570))
+
+
+    def addStat(self,stat):
+        curr_hp = self.upgrades[0]
+        curr_dmg = self.upgrades[1]
+        curr_speed = self.upgrades[2]
+        curr_bullets = self.upgrades[3]
+
+        if stat == 0:
+            curr_hp +=1
+        elif stat == 1:
+            curr_dmg +=1
+        elif stat == 2:
+            curr_speed +=1
+        elif stat == 3:
+            curr_bullets +=1
+
+        self.upgrades = curr_hp, curr_dmg, curr_speed, curr_bullets
+
+    def reset(self):
+        self.upgrades = (1,1,1,1)
+
+
+    def show(self):
         index = 0
         self.shop_upgrade_select(index)
-        curr_hp = current_upgrades[0]
-        curr_dmg = current_upgrades[1]
-        curr_speed = current_upgrades[2]
-        curr_bullets = current_upgrades[3]
 
+    
         while True:
             for event in pygame.event.get():
 
@@ -354,7 +412,7 @@ class Shop:
                     sys.exit()
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                    if index < 3:
+                    if index < 4:
                         index += 1
                         self.shop_upgrade_select(index)
 
@@ -365,22 +423,23 @@ class Shop:
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # other menu choices
-                    if index == 0:
-                        curr_hp += 1
+                    if index in {0,1,2,3}:
+                       # curr_hp += 1
+                       self.addStat(index)
 
-                    if index == 1:
-                        curr_dmg += 1
+                    # if index == 1:
+                    #     curr_dmg += 1
 
-                    if index == 2:
-                        curr_speed += 1
+                    # if index == 2:
+                    #     curr_speed += 1
 
-                    if index == 3:
-                        curr_bullets += 1
+                    # if index == 3:
+                    #     curr_bullets += 1
 
                     if index == 4:
                         gameDisplay.blit(self.background, (0, 0))
-                        ship, level = (1, 1)
-                        return curr_hp, curr_dmg, curr_speed, curr_bullets
+                        #ship, level = (1, 1)
+                        return #curr_hp, curr_dmg, curr_speed, curr_bullets
 
             pygame.display.update()
             clock.tick(FPS)
@@ -546,12 +605,13 @@ class MainMenu:
             clock.tick(FPS)
 
 
+# -------------------------Game-------------------------
 # SpaceInvaders - main program class, responding to events and game loop
 class SpaceInvaders:
     def __init__(self):
         self.screen = gameDisplay
         self.menu = MainMenu()
-#        self.shop = Shop()
+        self.shop = Shop()
 
         self.map = pygame.image.load(IMAGE_PATH + 'map1.png')
 
@@ -592,11 +652,9 @@ class SpaceInvaders:
                 enemy.rect.x = 80 + (column * 100)
                 enemy.rect.y = ENEMY_DEFAULT_POSITION + ENEMY_MOVE_DOWN * self.current_lvl + (row * 120)
                 enemies.add(enemy)
-
         return enemies
 
     def make_enemies_shoot(self):
-
         if (self.timer - self.enemies_shoot_timer) > SHOOT_FREQ / (self.current_lvl + 1) and self.enemies:
             enemy = self.enemies.random_bottom()
             self.enemyBullets.add(Bullet(enemy.rect.x + 14, enemy.rect.y + 20, 1, 15, 'bullet_1'))
@@ -641,8 +699,10 @@ class SpaceInvaders:
 
     def main(self):
             ship, diff_level, music = self.menu.show()
-            while True:
+            # upgrades = (1,1,1,1)
 
+            while True:
+                # game over
                 if self.gameOver:
                     self.gameOver = False
                     self.score = 0
@@ -654,6 +714,7 @@ class SpaceInvaders:
                     pygame.display.update()
                     pygame.time.wait(3000)
                     self.reset()
+                    self.shop.reset()
                     ship, diff_level, music = self.menu.show()
 
                 if self.nextRound:
@@ -663,7 +724,8 @@ class SpaceInvaders:
                     self.current_lvl += 1
                     self.reset()
                     self.nextRound = False
-                    # self.shop.show([])
+                    self.shop.show()
+                   
 
                 gameDisplay.blit(self.map, (0, 0))  # map load
                 self.scoreText = self.scoreFont.render("Score:  " + str(self.score), True, GREEN)
