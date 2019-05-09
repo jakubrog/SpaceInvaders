@@ -23,14 +23,20 @@ DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
 
 # other details
+UPGRADE_COUNT = 3
 ENEMY_DEFAULT_POSITION = 50  # initial value for a new game
 ENEMY_MOVE_DOWN = 25
-MAX_BULLETS = 2 # on the screen at the same time
 SHOOT_FREQ = 1000
 
+# stats
+# MAX_BULLETS = 2 # on the screen at the same time (also BASE_BULLETS)
+BASE_HEALTH = 100
+BASE_SPEED = 8
+BASE_DMG = 1
+
 #testing
-# MAX_BULLETS = 16 # on the screen at the same time
-# SHOOT_FREQ = 500
+MAX_BULLETS = 16
+
 
 pygame.init()  # initialize all imported pygame modules
 gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))  # Initialize a window for display
@@ -61,7 +67,7 @@ class Ship(pygame.sprite.Sprite):
         self.image = IMAGES['ship_1']
         self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect(topleft=(DISPLAY_WIDTH / 2 - 35, DISPLAY_HEIGHT - 80))
-        self.speed = 8
+        self.speed = BASE_SPEED
         self.health = Health()
 
     def update(self, keys, *args):
@@ -83,7 +89,10 @@ class Ship(pygame.sprite.Sprite):
 
     def hit(self, power):
         print(self.health.hp)
-        self.health.hp -= 10*power
+        dmg = power + 1
+        dmg *= 10
+        dmg -= 2*BASE_DMG
+        self.health.hp -= dmg
 
 
 # single enemy ship
@@ -256,7 +265,7 @@ class Bullet(pygame.sprite.Sprite):
 class Health(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.hp = 100
+        self.hp = BASE_HEALTH
 
     def update(self):
         font = pygame.font.Font(FONT, 20)
@@ -318,6 +327,8 @@ def settings_menu_show(background):
 # not completed
 class Shop:
     upgrades = (1,1,1,1)
+    count = UPGRADE_COUNT
+    
 
     def __init__(self):
         # upgrades = (1,1,1,1)
@@ -337,6 +348,8 @@ class Shop:
         self.stat2 = self.font.render(str(self.upgrades[2]), True, WHITE)
         self.stat3 = self.font.render(str(self.upgrades[3]), True, WHITE)
 
+        self.count_label = self.font.render(str(self.count), True, WHITE)
+
     def shop_upgrade_select(self, index):
         self.label0 = self.font.render("HP", True, WHITE)
         self.label1 = self.font.render("DMG", True, WHITE)
@@ -348,6 +361,8 @@ class Shop:
         self.stat1 = self.font.render(str(self.upgrades[1]), True, WHITE)
         self.stat2 = self.font.render(str(self.upgrades[2]), True, WHITE)
         self.stat3 = self.font.render(str(self.upgrades[3]), True, WHITE)
+
+        self.count_label = self.font.render(str(self.count), True, WHITE)
 
         if index == 0:
             self.label0 = self.font.render("> HP", True, RED)
@@ -377,6 +392,7 @@ class Shop:
         gameDisplay.blit(self.stat2, (300, 520))
         gameDisplay.blit(self.stat3, (300, 570))
 
+        gameDisplay.blit(self.count_label, (600, 500))
 
     def addStat(self,stat):
         curr_hp = self.upgrades[0]
@@ -394,15 +410,31 @@ class Shop:
             curr_bullets +=1
 
         self.upgrades = curr_hp, curr_dmg, curr_speed, curr_bullets
-
+   
+    # TODO: move upgrades somewhere else
+    def getUpgrade(self, up_type):
+        if up_type == 0:
+            return self.upgrades[0]
+        elif up_type == 1:
+            return self.upgrades[1]
+        elif up_type == 2:
+            return self.upgrades[2]
+        elif up_type == 3:
+            return self.upgrades[3]
+        
     def reset(self):
         self.upgrades = (1,1,1,1)
 
+    def apply_upgrades(self):
+        BASE_HEALTH = 100 + 10 * self.getUpgrade(0)
+        BASE_DMG = 1 + self.getUpgrade(1)
+        BASE_SPEED = 8 + self.getUpgrade(2)
+        MAX_BULLETS = 2 + 2*(self.getUpgrade(3) - 1)
 
     def show(self):
         index = 0
         self.shop_upgrade_select(index)
-
+        self.count = UPGRADE_COUNT
     
         while True:
             for event in pygame.event.get():
@@ -423,9 +455,10 @@ class Shop:
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # other menu choices
-                    if index in {0,1,2,3}:
+                    if index in {0,1,2,3} and self.count > 0:
                        # curr_hp += 1
                        self.addStat(index)
+                       self.count -=1
 
                     # if index == 1:
                     #     curr_dmg += 1
@@ -443,6 +476,7 @@ class Shop:
 
             pygame.display.update()
             clock.tick(FPS)
+
 
 
 # new feature
@@ -677,7 +711,7 @@ class SpaceInvaders:
         for player in pygame.sprite.groupcollide(self.shipGroup, self.enemyBullets,
                                           True, True).keys():
 
-            self.ship.hit(self.current_lvl + 1)  # change to real power
+            self.ship.hit(self.current_lvl)  # change to real power
             self.shipGroup.add(self.ship)
             self.allSprites.add(self.shipGroup)
 
