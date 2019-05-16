@@ -6,7 +6,7 @@ from random import choice
 BASE_PATH = abspath(dirname(__file__))
 IMAGE_PATH = BASE_PATH + '/images/'
 FONT_PATH = BASE_PATH + '/fonts/'
-
+MUSIC_PATH = BASE_PATH + '/Sounds/'
 # colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -40,6 +40,10 @@ pygame.init()  # initialize all imported pygame modules
 gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))  # Initialize a window for display
 pygame.display.set_caption("Space Invaders")
 clock = pygame.time.Clock()
+pygame.mixer.music.load(MUSIC_PATH + "music.mp3")
+icon = pygame.image.load(IMAGE_PATH + 'icon.png')
+pygame.display.set_icon(icon)
+
 
 FONT = FONT_PATH + 'Goodtimes.ttf' # basic font
 
@@ -51,12 +55,9 @@ IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy1_2',
 IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_alpha()
           for name in IMG_NAMES}
 
-# TODO: change enemies photos, shrink images to reduce time of creating objects
-# TODO: fix shop
-# TODO: exposions after hit and sounds
-
 
 # --------------------Sprites-------------------
+
 
 # main character
 class Ship(pygame.sprite.Sprite):
@@ -270,47 +271,6 @@ class Health(pygame.sprite.Sprite):
         return self.hp > 0
 
 # ---------------------- Menu functions----------------------
-
-
-def settings_menu_show(background):
-    font = pygame.font.Font(FONT, 35)
-    help_font = pygame.font.Font(FONT, 17)
-    about_font = pygame.font.Font(FONT, 25)
-
-    music_label = font.render("Music", True, RED)
-    music_select = font.render("< ON >", True, YELLOW)
-
-    about = about_font.render("Created by Jakub Rog and Jan Makowiecki in 2019.", True, WHITE)
-    help_label = help_font.render("[ESC] - get back", True, ORANGE)
-
-    music = True
-
-    while True:
-        gameDisplay.blit(background, (0, 0))
-        gameDisplay.blit(music_label, (50, 300))
-        gameDisplay.blit(music_select, (500, 300))
-        gameDisplay.blit(about, (105, 650))
-        gameDisplay.blit(help_label, (10, 730))
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            if event.type == pygame.KEYDOWN:
-                if event.key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN]:
-                    if music:
-                        music_select = font.render("< OFF >", True, YELLOW)
-                    else:
-                        music_select = font.render("< ON >", True, YELLOW)
-                    music = not music
-
-                elif event.key == pygame.K_q or event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
-                    gameDisplay.fill(BLACK)
-                    return music
-
-        pygame.display.update()
-        clock.tick(FPS)
 
 
 # not completed
@@ -576,7 +536,6 @@ class MainMenu:
     def show(self):
         index = 0
         self.menu_option_select(index)
-
         while True:
             for event in pygame.event.get():
 
@@ -603,7 +562,7 @@ class MainMenu:
                         self.menu_option_select(index)
 
                     if index == 1:
-                        self.music = settings_menu_show(self.background)
+                        self.settings_menu_show()
                         self.menu_option_select(index)
 
                     if index == 2:
@@ -612,6 +571,54 @@ class MainMenu:
 
             pygame.display.update()
             clock.tick(FPS)
+
+    def settings_menu_show(self):
+        font = pygame.font.Font(FONT, 35)
+        help_font = pygame.font.Font(FONT, 17)
+        about_font = pygame.font.Font(FONT, 25)
+
+        music_label = font.render("Music", True, RED)
+        if self.music:
+            music_select = font.render("< ON >", True, YELLOW)
+        else:
+            music_select = font.render("< OFF >", True, YELLOW)
+
+        about = about_font.render("Created by Jakub Rog and Jan Makowiecki in 2019.", True, WHITE)
+        help_label = help_font.render("[ESC] - get back", True, ORANGE)
+
+        while True:
+            gameDisplay.blit(self.background, (0, 0))
+            gameDisplay.blit(music_label, (50, 300))
+            gameDisplay.blit(music_select, (500, 300))
+            gameDisplay.blit(about, (105, 650))
+            gameDisplay.blit(help_label, (10, 730))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN]:
+                        if self.music:
+                            music_select = font.render("< OFF >", True, YELLOW)
+                        else:
+                            music_select = font.render("< ON >", True, YELLOW)
+                        self.music = not self.music
+
+                    elif event.key == pygame.K_q or event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        gameDisplay.fill(BLACK)
+                        if self.music:
+                            pygame.mixer.music.play(-1)
+                        else:
+                            pygame.mixer.music.stop()
+                        return
+
+            pygame.display.update()
+            clock.tick(FPS)
+
+    def get_music_setting(self):
+        return self.music
 
 
 # -------------------------Game-------------------------
