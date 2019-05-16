@@ -25,7 +25,7 @@ DISPLAY_HEIGHT = 768
 # other details
 UPGRADE_COUNT = 3
 ENEMY_DEFAULT_POSITION = 50  # initial value for a new game
-ENEMY_MOVE_DOWN = 25
+ENEMY_MOVE_DOWN = 10  # how much lower in next round
 SHOOT_FREQ = 1000
 
 # stats
@@ -33,9 +33,7 @@ SHOOT_FREQ = 1000
 BASE_HEALTH = 100
 BASE_SPEED = 8
 BASE_DMG = 1
-
-#testing
-MAX_BULLETS = 16
+MAX_BULLETS = 4
 
 
 pygame.init()  # initialize all imported pygame modules
@@ -43,9 +41,9 @@ gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))  # Initia
 pygame.display.set_caption("Space Invaders")
 clock = pygame.time.Clock()
 
-FONT = FONT_PATH + 'Minecraftia.ttf' # basic font
+FONT = FONT_PATH + 'Goodtimes.ttf' # basic font
 
-# names of created images
+# names of created IMAGES
 IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy1_2',
              'enemy2_1', 'enemy2_2',
              'enemy3_1', 'enemy3_2']
@@ -88,7 +86,6 @@ class Ship(pygame.sprite.Sprite):
         return bullets
 
     def hit(self, power):
-        print(self.health.hp)
         dmg = power + 1
         dmg *= 10
         dmg -= 2*BASE_DMG
@@ -109,6 +106,7 @@ class Enemy(pygame.sprite.Sprite):  # sprite - base class for visible game objec
         self.image = self.images[self.index]
         self.rect = self.image.get_rect()
 
+    # setting proper image to ship
     def toggle_image(self):
         self.index += 1
         if self.index >= len(self.images):
@@ -125,8 +123,8 @@ class Enemy(pygame.sprite.Sprite):  # sprite - base class for visible game objec
 
         img1, img2 = (IMAGES['enemy{}'.format(img_num)] for img_num in images[self.row % 4])
 
-        self.images.append(pygame.transform.scale(img1, (70, 50)))
-        self.images.append(pygame.transform.scale(img2, (70, 50)))
+        self.images.append(pygame.transform.scale(img1, (70, 60)))
+        self.images.append(pygame.transform.scale(img2, (70, 60)))
 
     def update(self, *args):
         game.screen.blit(self.image, self.rect)
@@ -141,8 +139,12 @@ class GroupOfEnemies(pygame.sprite.Group):
         self.columns = columns
         self.rows = rows
 
-        self.x_speed = 10 + speed * 2
-        self.y_speed = 3 + speed
+        if speed > 5:
+            self.x_speed = 40
+            self.y_speed = 5
+        else:
+            self.x_speed = 20 + (speed - 2) * 2
+            self.y_speed = 3
 
         self.leftMoves = 30
         self.rightMoves = 30  # how much is moving to one of sides
@@ -158,10 +160,9 @@ class GroupOfEnemies(pygame.sprite.Group):
         self._leftAliveColumn = 0
         self._rightAliveColumn = columns - 1
 
-    def update(self, currentTime):
-        if currentTime - self.timer > self.moveTime:
+    def update(self, current_time):
+        if current_time - self.timer > self.moveTime:
             x_max, x_min, y_max = self.get_max_and_min()
-            print(x_min)
             self.direction = choice([-1, 1])
             if self.direction == 1 and x_max + self.x_speed < DISPLAY_WIDTH:
                 self.direction = 1
@@ -177,6 +178,7 @@ class GroupOfEnemies(pygame.sprite.Group):
 
             self.timer = pygame.time.get_ticks()
 
+    #  finding edges enemies (to make more movement)
     def get_max_and_min(self):
         x_max = 0
         x_min = DISPLAY_WIDTH
@@ -190,12 +192,6 @@ class GroupOfEnemies(pygame.sprite.Group):
                 y_max = enemy.rect.y
         return x_max+70, x_min, y_max
 
-    def get_max_y(self):
-        for enemy in self:
-            if enemy.rect.y > max:
-                max = enemy.rect.y
-        return max
-
     def add_internal(self, *sprites):
         super(GroupOfEnemies, self).add_internal(*sprites)
         for s in sprites:
@@ -208,8 +204,7 @@ class GroupOfEnemies(pygame.sprite.Group):
         self.update_speed()
 
     def is_column_dead(self, column):
-        return not any(self.enemies[row][column]
-                        for row in range(self.rows))
+        return not any(self.enemies[row][column] for row in range(self.rows))
 
     def random_bottom(self):
         col = choice(self._aliveColumns)
@@ -218,10 +213,10 @@ class GroupOfEnemies(pygame.sprite.Group):
         return next((en for en in col_enemies if en is not None), None)
 
     def update_speed(self):
-         if len(self) == 1:
-             self.moveTime = 200
-         elif len(self) <= 10:
-             self.moveTime = 400
+        if len(self) == 1:
+            self.moveTime = 200
+        elif len(self) <= 10:
+            self.moveTime = 400
 
     def kill(self, enemy):
         self.enemies[enemy.row][enemy.column] = None
@@ -260,7 +255,6 @@ class Bullet(pygame.sprite.Sprite):
             self.kill()
 
 
-
 # Health - displaying HP point and health management
 class Health(pygame.sprite.Sprite):
     def __init__(self):
@@ -275,9 +269,8 @@ class Health(pygame.sprite.Sprite):
     def is_alive(self):
         return self.hp > 0
 
+# ---------------------- Menu functions----------------------
 
-
-# ---------------------- Menus----------------------
 
 def settings_menu_show(background):
     font = pygame.font.Font(FONT, 35)
@@ -286,10 +279,6 @@ def settings_menu_show(background):
 
     music_label = font.render("Music", True, RED)
     music_select = font.render("< ON >", True, YELLOW)
-
-    
-    # sound_label = font.render("Sounds", True, GRAY)
-    # sound_select = font.render("< ON >", True, GRAY)
 
     about = about_font.render("Created by Jakub Rog and Jan Makowiecki in 2019.", True, WHITE)
     help_label = help_font.render("[ESC] - get back", True, ORANGE)
@@ -328,7 +317,6 @@ def settings_menu_show(background):
 class Shop:
     upgrades = (1,1,1,1)
     count = UPGRADE_COUNT
-    
 
     def __init__(self):
         # upgrades = (1,1,1,1)
@@ -394,7 +382,7 @@ class Shop:
 
         gameDisplay.blit(self.count_label, (600, 500))
 
-    def addStat(self,stat):
+    def add_stat(self,stat):
         curr_hp = self.upgrades[0]
         curr_dmg = self.upgrades[1]
         curr_speed = self.upgrades[2]
@@ -412,7 +400,7 @@ class Shop:
         self.upgrades = curr_hp, curr_dmg, curr_speed, curr_bullets
    
     # TODO: move upgrades somewhere else
-    def getUpgrade(self, up_type):
+    def get_upgrade(self, up_type):
         if up_type == 0:
             return self.upgrades[0]
         elif up_type == 1:
@@ -426,10 +414,10 @@ class Shop:
         self.upgrades = (1,1,1,1)
 
     def apply_upgrades(self):
-        BASE_HEALTH = 100 + 10 * self.getUpgrade(0)
-        BASE_DMG = 1 + self.getUpgrade(1)
-        BASE_SPEED = 8 + self.getUpgrade(2)
-        MAX_BULLETS = 2 + 2*(self.getUpgrade(3) - 1)
+        BASE_HEALTH = 100 + 10 * self.get_upgrade(0)
+        BASE_DMG = 1 + self.get_upgrade(1)
+        BASE_SPEED = 8 + self.get_upgrade(2)
+        MAX_BULLETS = 2 + 2*(self.get_upgrade(3) - 1)
 
     def show(self):
         index = 0
@@ -457,7 +445,7 @@ class Shop:
                     # other menu choices
                     if index in {0,1,2,3} and self.count > 0:
                        # curr_hp += 1
-                       self.addStat(index)
+                       self.add_stat(index)
                        self.count -=1
 
                     # if index == 1:
@@ -476,7 +464,6 @@ class Shop:
 
             pygame.display.update()
             clock.tick(FPS)
-
 
 
 # new feature
@@ -562,40 +549,33 @@ class MainMenu:
         self.background = pygame.transform.scale(self.background, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
         gameDisplay.blit(self.background, (0, 0))
         self.font = pygame.font.Font(FONT, 25)
-        self.index = 0
+        self.index = 1
         self.label0 = self.font.render("New Game", True, RED)
-        self.label1 = self.font.render("Highscores", True, WHITE)
-        self.label2 = self.font.render("Settings", True, WHITE)
-        self.label3 = self.font.render("Quit", True, WHITE)
+        self.label1 = self.font.render("Settings", True, WHITE)
+        self.label2 = self.font.render("Quit", True, WHITE)
+        self.music = False
 
     def menu_option_select(self, index):
         self.label0 = self.font.render("New Game", True, WHITE)
-        self.label1 = self.font.render("Highscores", True, WHITE)
-        self.label2 = self.font.render("Settings", True, WHITE)
-        self.label3 = self.font.render("Quit", True, WHITE)
+        self.label1 = self.font.render("Settings", True, WHITE)
+        self.label2 = self.font.render("Quit", True, WHITE)
 
         if index == 0:
             self.label0 = self.font.render("> New Game", True, RED)
         elif index == 1:
-            self.label1 = self.font.render("> Highscores", True, RED)
+            self.label1 = self.font.render("> Settings", True, RED)
         elif index == 2:
-            self.label2 = self.font.render("> Settings", True, RED)
-        elif index == 3:
-            self.label3 = self.font.render("> Quit", True, RED)
+            self.label2 = self.font.render("> Quit", True, RED)
 
         gameDisplay.blit(self.background, (0, 0))
         gameDisplay.blit(self.label0, (100, 520))
         gameDisplay.blit(self.label1, (100, 570))
         gameDisplay.blit(self.label2, (100, 620))
-        gameDisplay.blit(self.label3, (100, 670))
 
     # show - shows menu with buttons, returns selected options where 0 is start game and 2 is settings
     def show(self):
         index = 0
         self.menu_option_select(index)
-        music = True
-        # level = 0
-        # ship = 0
 
         while True:
             for event in pygame.event.get():
@@ -605,7 +585,7 @@ class MainMenu:
                     sys.exit()
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                    if index < 3:
+                    if index < 2:
                         index += 1
                         self.menu_option_select(index)
 
@@ -619,19 +599,14 @@ class MainMenu:
                     if index == 0:
                         diff, ship = newgame_menu_show(self.background)
                         if diff != (-1):
-                            return music, diff, ship
+                            return
                         self.menu_option_select(index)
 
                     if index == 1:
-                        print("Highscores")
-                        # self.menu_option_select(index)
-
-                    if index == 2:
-                        music = settings_menu_show(self.background)
+                        self.music = settings_menu_show(self.background)
                         self.menu_option_select(index)
 
-                    # TODO: add showing highscores
-                    if index == 3:
+                    if index == 2:
                         pygame.quit()
                         sys.exit()
 
@@ -648,6 +623,7 @@ class SpaceInvaders:
         self.shop = Shop()
 
         self.map = pygame.image.load(IMAGE_PATH + 'map1.png')
+        self.map = pygame.transform.scale(self.map, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
         # init objects
         self.ship = Ship()
@@ -660,7 +636,6 @@ class SpaceInvaders:
         self.enemyBullets = pygame.sprite.Group()
         self.allSprites = pygame.sprite.Group(self.shipGroup, self.enemies)
 
-
         # helpers
         self.enemyPosition = ENEMY_DEFAULT_POSITION  # starting enemies position, increasing each round
         self.gameOver = False
@@ -670,11 +645,11 @@ class SpaceInvaders:
         self.timer = pygame.time.get_ticks()
         self.enemies_shoot_timer = pygame.time.get_ticks()
 
-
         # texts
         self.font = pygame.font.Font(FONT, 85)
         self.scoreFont = pygame.font.Font(FONT, 20)
         self.gameOverText = self.font.render("Game Over", True, RED)
+
         self.nextRoundText = self.font.render('Next Round', True, WHITE)
         self.scoreText = self.font.render("Score:"+str(self.score), True, GREEN)
 
@@ -684,12 +659,21 @@ class SpaceInvaders:
             for column in range(self.enemiesCols):
                 enemy = Enemy(row, column)
                 enemy.rect.x = 80 + (column * 100)
-                enemy.rect.y = ENEMY_DEFAULT_POSITION + ENEMY_MOVE_DOWN * self.current_lvl + (row * 120)
+
+                # setting minimum height of starting position
+                lvl_factor = ENEMY_MOVE_DOWN * self.current_lvl
+                if lvl_factor > 70:
+                    lvl_factor = 70
+
+                enemy.rect.y = ENEMY_DEFAULT_POSITION + (row * 120) + lvl_factor
                 enemies.add(enemy)
         return enemies
 
     def make_enemies_shoot(self):
-        if (self.timer - self.enemies_shoot_timer) > SHOOT_FREQ / (self.current_lvl + 1) and self.enemies:
+        freq = SHOOT_FREQ / (self.current_lvl + 1)
+        if freq < 200:
+            freq = 200
+        if (self.timer - self.enemies_shoot_timer) > freq and self.enemies:
             enemy = self.enemies.random_bottom()
             self.enemyBullets.add(Bullet(enemy.rect.x + 14, enemy.rect.y + 20, 1, 15, 'bullet_1'))
             self.allSprites.add(self.enemyBullets)
@@ -701,25 +685,21 @@ class SpaceInvaders:
     def check_collisions(self):
         pygame.sprite.groupcollide(self.bullets, self.enemyBullets, True, True)
 
-        for enemy in pygame.sprite.groupcollide(self.enemies, self.bullets,
-                                                 True, True).keys():
+        for enemy in pygame.sprite.groupcollide(self.enemies, self.bullets, True, True).keys():
             self.calculate_score(enemy.row)
             if not self.enemies.sprites():
                 self.nextRound = True
                 return
 
-        for player in pygame.sprite.groupcollide(self.shipGroup, self.enemyBullets,
-                                          True, True).keys():
-
-            self.ship.hit(self.current_lvl)  # change to real power
+        if pygame.sprite.groupcollide(self.shipGroup, self.enemyBullets, True, True).keys():
+            self.ship.hit(self.current_lvl)
             self.shipGroup.add(self.ship)
             self.allSprites.add(self.shipGroup)
 
             if not self.ship.health.is_alive():
                 self.gameOver = True
 
-        for player in pygame.sprite.groupcollide(self.shipGroup, self.enemies,
-                                          True, True).keys():
+        if pygame.sprite.groupcollide(self.shipGroup, self.enemies, True, True).keys():
             self.gameOver = True
 
     def reset(self):
@@ -730,36 +710,41 @@ class SpaceInvaders:
         self.enemyBullets = pygame.sprite.Group()
         self.allSprites = pygame.sprite.Group(self.shipGroup, self.enemies)
 
-
     def main(self):
-            ship, diff_level, music = self.menu.show()
+            self.menu.show()
+
             # upgrades = (1,1,1,1)
 
             while True:
                 # game over
                 if self.gameOver:
                     self.gameOver = False
+
+                    s = pygame.Surface((DISPLAY_WIDTH, DISPLAY_HEIGHT), pygame.SRCALPHA)
+                    s.fill((255, 255, 255, 80))
+                    gameDisplay.blit(s, (0, 0))
+
+                    gameDisplay.blit(self.gameOverText, (DISPLAY_WIDTH/4 - 75, DISPLAY_HEIGHT/4))
+                    score = pygame.font.Font(FONT, 40).render("Your Score: " + str(self.score), True, ORANGE)
+                    gameDisplay.blit(score, (DISPLAY_WIDTH/4 + 55, DISPLAY_HEIGHT/4 + 150))
+                    pygame.display.update()
+
                     self.score = 0
                     self.current_lvl = 0
-                    gameDisplay.blit(self.gameOverText, (DISPLAY_WIDTH/4, DISPLAY_HEIGHT/4))
-                    s = pygame.Surface((DISPLAY_WIDTH, DISPLAY_HEIGHT), pygame.SRCALPHA)
-                    s.fill((255, 255, 255, 128))
-                    gameDisplay.blit(s, (0, 0))
-                    pygame.display.update()
-                    pygame.time.wait(3000)
                     self.reset()
                     self.shop.reset()
-                    ship, diff_level, music = self.menu.show()
+
+                    pygame.time.wait(3000)
+                    self.menu.show()
 
                 if self.nextRound:
-                    gameDisplay.blit(self.nextRoundText, (DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 4))
+                    gameDisplay.blit(self.nextRoundText, (DISPLAY_WIDTH / 4 - 100, DISPLAY_HEIGHT / 4))
                     pygame.display.update()
                     pygame.time.wait(2000)
                     self.current_lvl += 1
                     self.reset()
                     self.nextRound = False
                     self.shop.show()
-                   
 
                 gameDisplay.blit(self.map, (0, 0))  # map load
                 self.scoreText = self.scoreFont.render("Score:  " + str(self.score), True, GREEN)
