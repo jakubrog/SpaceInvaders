@@ -18,7 +18,7 @@ GREEN = (0, 255, 0)
 
 # game details
 
-FPS = 15
+FPS = 60
 DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
 
@@ -37,7 +37,7 @@ MAX_BULLETS = 4
 
 
 pygame.init()  # initialize all imported pygame modules
-gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))  # Initialize a window for display
+gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT), pygame.RESIZABLE)  # Initialize a window for display
 pygame.display.set_caption("Space Invaders")
 clock = pygame.time.Clock()
 pygame.mixer.music.load(MUSIC_PATH + "music.mp3")
@@ -48,13 +48,13 @@ pygame.display.set_icon(icon)
 FONT = FONT_PATH + 'Goodtimes.ttf' # basic font
 
 # names of created IMAGES
-IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy1_2',
-             'enemy2_1', 'enemy2_2',
-             'enemy3_1', 'enemy3_2']
+IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy2_1','enemy3_1', ]
+MAPS_NAMES = ['map3', 'map2', 'map1', 'map0']
 
 IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_alpha()
           for name in IMG_NAMES}
 
+MAPS = {name: pygame.image.load(IMAGE_PATH + '/maps/' + '{}.png'.format(name)).convert_alpha() for name in MAPS_NAMES}
 
 # --------------------Sprites-------------------
 
@@ -610,9 +610,9 @@ class MainMenu:
                     elif event.key == pygame.K_q or event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         gameDisplay.fill(BLACK)
                         if self.music:
-                            pygame.mixer.music.play(-1)
+                            pygame.mixer.music.unpause()
                         else:
-                            pygame.mixer.music.stop()
+                            pygame.mixer.music.pause()
                         return
 
             pygame.display.update()
@@ -629,9 +629,6 @@ class SpaceInvaders:
         self.screen = gameDisplay
         self.menu = MainMenu()
         self.shop = Shop()
-
-        self.map = pygame.image.load(IMAGE_PATH + 'map1.png')
-        self.map = pygame.transform.scale(self.map, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
         # init objects
         self.ship = Ship()
@@ -677,6 +674,44 @@ class SpaceInvaders:
                 enemies.add(enemy)
         return enemies
 
+    def select_map(self):
+        index = 0
+        maps_no = len(MAPS)
+
+        select_label = pygame.font.Font(FONT, 80).render("SELECT MAP", True, ORANGE)
+        right_arrow_label = pygame.font.Font(FONT, 80).render(">", True, GRAY)
+        left_arrow_label = pygame.font.Font(FONT, 80).render("<", True, GRAY)
+        map_label = pygame.font.Font(FONT, 60)
+        pygame.font.Font(FONT, 40).render("SELECT MAP" + str(self.score), True, ORANGE)
+
+        while True:
+            map = pygame.transform.scale(MAPS['map'+str(index)], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+            gameDisplay.blit(map, (0, 0))
+            gameDisplay.blit(map_label.render('Map ' + str(index + 1), True, RED),
+                             (DISPLAY_WIDTH/2-110, DISPLAY_HEIGHT/2 - 40))
+
+            gameDisplay.blit(select_label, (200, 70))
+            gameDisplay.blit(left_arrow_label, (DISPLAY_WIDTH/2-240, DISPLAY_HEIGHT/2 - 50))
+            gameDisplay.blit(right_arrow_label, (DISPLAY_WIDTH/2+190, DISPLAY_HEIGHT / 2 - 50))
+
+            pygame.display.update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_LEFT] and index > 0:
+                        index -= 1
+                    if event.key in [pygame.K_RIGHT] and index < maps_no - 1:
+                        index += 1
+                    if event.key in [pygame.K_RETURN]:
+                        return pygame.transform.scale(MAPS['map'+str(index)], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+
+            clock.tick(FPS)
+
+
     def make_enemies_shoot(self):
         freq = SHOOT_FREQ / (self.current_lvl + 1)
         if freq < 200:
@@ -720,9 +755,9 @@ class SpaceInvaders:
 
     def main(self):
             self.menu.show()
+            map = self.select_map()
 
             # upgrades = (1,1,1,1)
-
             while True:
                 # game over
                 if self.gameOver:
@@ -754,7 +789,7 @@ class SpaceInvaders:
                     self.nextRound = False
                     self.shop.show()
 
-                gameDisplay.blit(self.map, (0, 0))  # map load
+                gameDisplay.blit(map, (0, 0))  # map load
                 self.scoreText = self.scoreFont.render("Score:  " + str(self.score), True, GREEN)
                 gameDisplay.blit(self.scoreText, (10, 10))
                 keys = pygame.key.get_pressed()
@@ -774,7 +809,7 @@ class SpaceInvaders:
                 self.timer = pygame.time.get_ticks()
                 self.make_enemies_shoot()
                 pygame.display.update()
-                clock.tick(60)
+                clock.tick(FPS)
 
 
 if __name__ == '__main__':
