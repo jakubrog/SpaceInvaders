@@ -513,7 +513,8 @@ class MainMenu:
         self.label0 = self.font.render("New Game", True, RED)
         self.label1 = self.font.render("Settings", True, WHITE)
         self.label2 = self.font.render("Quit", True, WHITE)
-        self.music = False
+        self.music = True
+        pygame.mixer.music.play(-1)
 
     def menu_option_select(self, index):
         self.label0 = self.font.render("New Game", True, WHITE)
