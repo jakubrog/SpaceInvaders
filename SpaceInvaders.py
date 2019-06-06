@@ -640,7 +640,7 @@ class MainMenu:
                     if index == 0:
                         ship, diff = newgame_menu_show(self.background)
                         if diff != (-1):
-                            return
+                            return diff
                         self.menu_option_select(index)
 
                         # highscores
@@ -880,7 +880,7 @@ class SpaceInvaders:
         self.allSprites = pygame.sprite.Group(self.shipGroup, self.enemies)
 
     def main(self):
-        self.menu.show()
+        self.current_lvl = self.menu.show()
         map = self.select_map()
 
         # upgrades = (1,1,1,1)
@@ -944,7 +944,7 @@ class SpaceInvaders:
                 self.shop.reset()
 
                 pygame.time.wait(1000)
-                self.menu.show()
+                self.current_lvl = self.menu.show()
 
             if self.nextRound:
                 gameDisplay.blit(self.nextRoundText, (DISPLAY_WIDTH / 4 - 100, DISPLAY_HEIGHT / 4))
