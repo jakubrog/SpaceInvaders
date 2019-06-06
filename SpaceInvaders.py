@@ -44,6 +44,7 @@ pygame.mixer.music.load(MUSIC_PATH + "music.mp3")
 icon = pygame.image.load(IMAGE_PATH + 'icon.png')
 pygame.display.set_icon(icon)
 
+general_hslist = []
 
 FONT = FONT_PATH + 'Goodtimes.ttf' # basic font
 
@@ -425,6 +426,62 @@ class Shop:
             pygame.display.update()
             clock.tick(FPS)
 
+# highscores
+class Highscore:
+    def __init__(self):
+        file = open("highscores.txt","r")
+        self.hslist = []
+
+        f = file.readlines()
+        self.file_data = []
+        for i in range(10):
+            self.file_data.append(f[i])
+
+        self.convert_from_file()
+        file.close()
+
+    # dodanie wyniku do listy
+    def add(self, name, score):
+        if score > self.hslist[9][1]:
+            self.hslist.append((name,score))
+            self.sort_hslist()
+            self.hslist = self.hslist[0:-1]
+
+    # przerobienie danych z pliku na listę wyników
+    def convert_from_file(self):
+        for i in range(10):
+            tmp = self.file_data[i]
+            if tmp[-1] == '\n':
+                tmp = tmp[0:-1]
+            s = tmp.split()
+            name_segments = s[0:-1]
+            name = " ".join(name_segments)
+            score = int(s[-1])
+            self.hslist.append((name, score))
+    
+        self.sort_hslist()
+
+    # sortowanie po wynikach
+    def sort_hslist(self):
+        def take_sec(tup):
+            return tup[1]
+        self.hslist.sort(key=take_sec, reverse=True)
+
+    # dostęp do listy dla wyświetlania wyników
+    def set_hslist(self):
+        global global_hslist
+        global_hslist = self.hslist
+        
+    
+    # zapis do pliku
+    def save_to_file(self):   
+        file = open("highscores.txt","w")
+        for i in range(10):
+            tmp = self.hslist[i]
+            file.write(" ".join((tmp[0],str(tmp[1]),'\n')))
+        file.close()
+
+
 
 # new feature
 def newgame_menu_show(background):
@@ -511,27 +568,32 @@ class MainMenu:
         self.font = pygame.font.Font(FONT, 25)
         self.index = 1
         self.label0 = self.font.render("New Game", True, RED)
-        self.label1 = self.font.render("Settings", True, WHITE)
-        self.label2 = self.font.render("Quit", True, WHITE)
+        self.label1 = self.font.render("Highscores", True, WHITE)
+        self.label2 = self.font.render("Settings", True, WHITE)
+        self.label3 = self.font.render("Quit", True, WHITE)
         self.music = True
         pygame.mixer.music.play(-1)
 
     def menu_option_select(self, index):
         self.label0 = self.font.render("New Game", True, WHITE)
-        self.label1 = self.font.render("Settings", True, WHITE)
-        self.label2 = self.font.render("Quit", True, WHITE)
+        self.label1 = self.font.render("Highscores", True, WHITE)
+        self.label2 = self.font.render("Settings", True, WHITE)
+        self.label3 = self.font.render("Quit", True, WHITE)
 
         if index == 0:
             self.label0 = self.font.render("> New Game", True, RED)
         elif index == 1:
-            self.label1 = self.font.render("> Settings", True, RED)
+            self.label1 = self.font.render("> Highscores", True, RED)
         elif index == 2:
-            self.label2 = self.font.render("> Quit", True, RED)
+            self.label2 = self.font.render("> Settings", True, RED)
+        elif index == 3:
+            self.label3 = self.font.render("> Quit", True, RED)
 
         gameDisplay.blit(self.background, (0, 0))
         gameDisplay.blit(self.label0, (100, 520))
         gameDisplay.blit(self.label1, (100, 570))
         gameDisplay.blit(self.label2, (100, 620))
+        gameDisplay.blit(self.label3, (100, 670))
 
     # show - shows menu with buttons, returns selected options where 0 is start game and 2 is settings
     def show(self):
@@ -545,7 +607,7 @@ class MainMenu:
                     sys.exit()
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                    if index < 2:
+                    if index < 3:
                         index += 1
                         self.menu_option_select(index)
 
@@ -562,16 +624,54 @@ class MainMenu:
                             return
                         self.menu_option_select(index)
 
+                        # highscores
                     if index == 1:
-                        self.settings_menu_show()
+                        self.highscore_show()
                         self.menu_option_select(index)
 
                     if index == 2:
+                        self.settings_menu_show()
+                        self.menu_option_select(index)
+
+                    if index == 3:
                         pygame.quit()
                         sys.exit()
 
             pygame.display.update()
             clock.tick(FPS)
+
+    #showing highscores
+    def highscore_show(self):
+        global global_hslist
+        font = pygame.font.Font(FONT, 25)
+        back_font = pygame.font.Font(FONT, 17)
+        name_labels = []
+        score_labels = []
+
+        for i in range(10):
+            name_labels.append(font.render(global_hslist[i][0], True, WHITE))
+            score_labels.append(font.render(str(global_hslist[i][1]), True, WHITE))
+        back_label = back_font.render("[ESC] - get back", True, ORANGE)
+
+        while True:
+            gameDisplay.blit(self.background, (0, 0))
+            for i in range(10):
+                gameDisplay.blit(name_labels[i], (100, 300+35*i))
+                gameDisplay.blit(score_labels[i], (600, 300+35*i))
+            gameDisplay.blit(back_label, (10, 730))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.KEYDOWN and event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                    gameDisplay.fill(BLACK)
+                    return
+
+            pygame.display.update()
+            clock.tick(FPS)
+
 
     def settings_menu_show(self):
         font = pygame.font.Font(FONT, 35)
@@ -583,6 +683,7 @@ class MainMenu:
             music_select = font.render("< ON >", True, YELLOW)
         else:
             music_select = font.render("< OFF >", True, YELLOW)
+        
 
         about = about_font.render("Created by Jakub Rog and Jan Makowiecki in 2019.", True, WHITE)
         help_label = help_font.render("[ESC] - get back", True, ORANGE)
@@ -626,9 +727,13 @@ class MainMenu:
 # SpaceInvaders - main program class, responding to events and game loop
 class SpaceInvaders:
     def __init__(self):
+        global global_hslist
         self.screen = gameDisplay
+        self.highscores = Highscore()
+        self.highscores.set_hslist()
         self.menu = MainMenu()
         self.shop = Shop()
+        
 
         # init objects
         self.ship = Ship()
@@ -649,6 +754,7 @@ class SpaceInvaders:
         self.bottom = 300
         self.timer = pygame.time.get_ticks()
         self.enemies_shoot_timer = pygame.time.get_ticks()
+
 
         # texts
         self.font = pygame.font.Font(FONT, 85)
@@ -768,16 +874,60 @@ class SpaceInvaders:
                     gameDisplay.blit(s, (0, 0))
 
                     gameDisplay.blit(self.gameOverText, (DISPLAY_WIDTH/4 - 75, DISPLAY_HEIGHT/4))
-                    score = pygame.font.Font(FONT, 40).render("Your Score: " + str(self.score), True, ORANGE)
-                    gameDisplay.blit(score, (DISPLAY_WIDTH/4 + 55, DISPLAY_HEIGHT/4 + 150))
+                    score_label = pygame.font.Font(FONT, 40).render("Your Score: " + str(self.score), True, ORANGE)
+                    gameDisplay.blit(score_label, (DISPLAY_WIDTH/4 + 55, DISPLAY_HEIGHT/4 + 150))
+
                     pygame.display.update()
+
+                    # score input
+                    input_box = pygame.Rect((DISPLAY_WIDTH/4 + 50, DISPLAY_HEIGHT/4 + 220), (470, 50))
+                    
+                    name = ''
+                    name_length = len(name)
+                    name_label = pygame.font.Font(FONT, 40).render(name, True, WHITE)
+                    submitted = False
+                    pygame.draw.rect(self.screen, GREEN, input_box)
+
+                    while not submitted:
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                pygame.quit()
+                                sys.exit()
+                                
+                            if event.type == pygame.KEYDOWN:
+                                    if event.key == pygame.K_RETURN:
+                                        print(name)
+                                        
+                                        submitted = True
+
+                                    elif event.key == pygame.K_BACKSPACE:
+                                        name = name[:-1]
+                                        name_length = len(name)
+
+                                    else:
+                                        if name_length < 12:
+                                            name += event.unicode
+                                            name_length = len(name)
+
+                        name_label = pygame.font.Font(FONT, 40).render(name, True, WHITE)
+                        pygame.draw.rect(self.screen, GREEN, input_box)
+                        gameDisplay.blit(name_label, (DISPLAY_WIDTH/4 + 55, DISPLAY_HEIGHT/4 + 220))
+                        pygame.display.update()
+
+
+                    self.highscores.add(name, self.score)
+                    self.highscores.set_hslist
+                    self.highscores.save_to_file()
+
+                    name = ''
+                    name_length = len(name)
 
                     self.score = 0
                     self.current_lvl = 0
                     self.reset()
                     self.shop.reset()
 
-                    pygame.time.wait(3000)
+                    pygame.time.wait(1000)
                     self.menu.show()
 
                 if self.nextRound:
