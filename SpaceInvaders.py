@@ -44,7 +44,7 @@ pygame.mixer.music.load(MUSIC_PATH + "music.mp3")
 icon = pygame.image.load(IMAGE_PATH + 'icon.png')
 pygame.display.set_icon(icon)
 
-general_hslist = []
+global_hslist = []
 
 FONT = FONT_PATH + 'Goodtimes.ttf' # basic font
 
