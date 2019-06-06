@@ -51,7 +51,7 @@ SHIP_NAMES = ['Ship1', 'Ship2', 'Ship3']
 FONT = FONT_PATH + 'Goodtimes.ttf'  # basic font
 
 # names of created IMAGES
-IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy2_1', 'enemy3_1', ]
+IMG_NAMES = ['ship_1','ship_2','ship_3', 'bullet_1', 'enemy1_1', 'enemy2_1', 'enemy3_1', ]
 MAPS_NAMES = ['map3', 'map2', 'map1', 'map0']
 
 IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_alpha()
@@ -65,10 +65,10 @@ MAPS = {name: pygame.image.load(IMAGE_PATH + '/maps/' + '{}.png'.format(name)).c
 
 # main character
 class Ship(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, img_no):
         pygame.sprite.Sprite.__init__(self)
         global BASE_SPEED
-        self.image = IMAGES['ship_1']
+        self.image = IMAGES['ship_{}'.format(img_no)]
         self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect(topleft=(DISPLAY_WIDTH / 2 - 35, DISPLAY_HEIGHT - 80))
         self.speed = BASE_SPEED
@@ -640,7 +640,7 @@ class MainMenu:
                     if index == 0:
                         ship, diff = newgame_menu_show(self.background)
                         if diff != (-1):
-                            return diff
+                            return diff, ship
                         self.menu_option_select(index)
 
                         # highscores
@@ -751,8 +751,10 @@ class SpaceInvaders:
         self.menu = MainMenu()
         self.shop = Shop()
 
+        self.current_lvl, self.ship_no = self.menu.show()
+
         # init objects
-        self.ship = Ship()
+        self.ship = Ship(self.ship_no)
         self.shipGroup = pygame.sprite.Group(self.ship)
         self.bullets = pygame.sprite.Group()
         self.enemiesRows = 4
@@ -872,7 +874,7 @@ class SpaceInvaders:
         BASE_ARMOR = 1
         MAX_BULLETS = 4
 
-        self.ship = Ship()
+        self.ship = Ship(self.ship_no)
         self.shipGroup = pygame.sprite.Group(self.ship)
         self.bullets = pygame.sprite.Group()
         self.enemies = self.make_enemies()
@@ -880,7 +882,7 @@ class SpaceInvaders:
         self.allSprites = pygame.sprite.Group(self.shipGroup, self.enemies)
 
     def main(self):
-        self.current_lvl = self.menu.show()
+
         map = self.select_map()
 
         # upgrades = (1,1,1,1)
@@ -944,7 +946,7 @@ class SpaceInvaders:
                 self.shop.reset()
 
                 pygame.time.wait(1000)
-                self.current_lvl = self.menu.show()
+                self.current_lvl, self.ship_no = self.menu.show()
 
             if self.nextRound:
                 gameDisplay.blit(self.nextRoundText, (DISPLAY_WIDTH / 4 - 100, DISPLAY_HEIGHT / 4))
