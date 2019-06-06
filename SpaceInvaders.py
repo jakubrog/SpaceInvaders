@@ -31,7 +31,7 @@ SHOOT_FREQ = 1000
 # stats
 # MAX_BULLETS = 2 # on the screen at the same time (also BASE_BULLETS)
 BASE_HEALTH = 100
-BASE_SPEED = 8
+BASE_SPEED = 10
 BASE_DMG = 1
 MAX_BULLETS = 4
 
@@ -57,8 +57,8 @@ IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_al
 
 MAPS = {name: pygame.image.load(IMAGE_PATH + '/maps/' + '{}.png'.format(name)).convert_alpha() for name in MAPS_NAMES}
 
-# --------------------Sprites-------------------
 
+# --------------------Sprites-------------------
 
 # main character
 class Ship(pygame.sprite.Sprite):
@@ -239,7 +239,7 @@ class GroupOfEnemies(pygame.sprite.Group):
                 is_column_dead = self.is_column_dead(self._leftAliveColumn)
 
 
-# Bullet - display and keep information about shot bullet
+# Bullet - display and keep information about bullet
 # direction in constructor depends on who attack
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x_position, y_position, direction, speed, image_name):  # direction -
@@ -271,8 +271,8 @@ class Health(pygame.sprite.Sprite):
     def is_alive(self):
         return self.hp > 0
 
-# ---------------------- Menu functions----------------------
 
+# ---------------------- Menu functions----------------------
 
 # not completed
 class Shop:
@@ -350,17 +350,16 @@ class Shop:
         curr_bullets = self.upgrades[3]
 
         if stat == 0:
-            curr_hp +=1
+            curr_hp += 1
         elif stat == 1:
-            curr_dmg +=1
+            curr_dmg += 1
         elif stat == 2:
-            curr_speed +=1
+            curr_speed += 1
         elif stat == 3:
-            curr_bullets +=1
+            curr_bullets += 1
 
         self.upgrades = curr_hp, curr_dmg, curr_speed, curr_bullets
-   
-    # TODO: move upgrades somewhere else
+
     def get_upgrade(self, up_type):
         if up_type == 0:
             return self.upgrades[0]
@@ -372,9 +371,10 @@ class Shop:
             return self.upgrades[3]
         
     def reset(self):
-        self.upgrades = (1,1,1,1)
+        self.upgrades = (1, 1, 1, 1)
 
     def apply_upgrades(self):
+        global BASE_HEALTH, BASE_DMG, BASE_SPEED, MAX_BULLETS
         BASE_HEALTH = 100 + 10 * self.get_upgrade(0)
         BASE_DMG = 1 + self.get_upgrade(1)
         BASE_SPEED = 8 + self.get_upgrade(2)
@@ -404,29 +404,29 @@ class Shop:
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # other menu choices
-                    if index in {0,1,2,3} and self.count > 0:
-                       # curr_hp += 1
-                       self.add_stat(index)
-                       self.count -=1
+                    if index in {0, 1, 2, 3} and self.count > 0:
+                        # curr_hp += 1
+                        self.add_stat(index)
+                        self.count -=1
 
                     # if index == 1:
                     #     curr_dmg += 1
-
+                    #
                     # if index == 2:
                     #     curr_speed += 1
-
+                    #
                     # if index == 3:
                     #     curr_bullets += 1
 
                     if index == 4:
                         gameDisplay.blit(self.background, (0, 0))
-                        #ship, level = (1, 1)
-                        return #curr_hp, curr_dmg, curr_speed, curr_bullets
+                        # ship, level = (1, 1)
+                        return  # curr_hp, curr_dmg, curr_speed, curr_bullets
 
             pygame.display.update()
             clock.tick(FPS)
 
-# highscores
+
 class Highscore:
     def __init__(self):
         file = open("highscores.txt","r")
@@ -471,8 +471,7 @@ class Highscore:
     def set_hslist(self):
         global global_hslist
         global_hslist = self.hslist
-        
-    
+
     # zapis do pliku
     def save_to_file(self):   
         file = open("highscores.txt","w")
@@ -480,7 +479,6 @@ class Highscore:
             tmp = self.hslist[i]
             file.write(" ".join((tmp[0],str(tmp[1]),'\n')))
         file.close()
-
 
 
 # new feature
@@ -640,7 +638,7 @@ class MainMenu:
             pygame.display.update()
             clock.tick(FPS)
 
-    #showing highscores
+    # showing highscores
     def highscore_show(self):
         global global_hslist
         font = pygame.font.Font(FONT, 25)
@@ -672,7 +670,6 @@ class MainMenu:
             pygame.display.update()
             clock.tick(FPS)
 
-
     def settings_menu_show(self):
         font = pygame.font.Font(FONT, 35)
         help_font = pygame.font.Font(FONT, 17)
@@ -683,7 +680,6 @@ class MainMenu:
             music_select = font.render("< ON >", True, YELLOW)
         else:
             music_select = font.render("< OFF >", True, YELLOW)
-        
 
         about = about_font.render("Created by Jakub Rog and Jan Makowiecki in 2019.", True, WHITE)
         help_label = help_font.render("[ESC] - get back", True, ORANGE)
@@ -733,7 +729,6 @@ class SpaceInvaders:
         self.highscores.set_hslist()
         self.menu = MainMenu()
         self.shop = Shop()
-        
 
         # init objects
         self.ship = Ship()
@@ -754,7 +749,6 @@ class SpaceInvaders:
         self.bottom = 300
         self.timer = pygame.time.get_ticks()
         self.enemies_shoot_timer = pygame.time.get_ticks()
-
 
         # texts
         self.font = pygame.font.Font(FONT, 85)
@@ -816,7 +810,6 @@ class SpaceInvaders:
                         return pygame.transform.scale(MAPS['map'+str(index)], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
             clock.tick(FPS)
-
 
     def make_enemies_shoot(self):
         freq = SHOOT_FREQ / (self.current_lvl + 1)
@@ -886,7 +879,7 @@ class SpaceInvaders:
                     name_length = len(name)
                     name_label = pygame.font.Font(FONT, 40).render(name, True, WHITE)
                     submitted = False
-                    pygame.draw.rect(self.screen, GREEN, input_box)
+                    pygame.draw.rect(self.screen, (255, 255, 255, 80), input_box)
 
                     while not submitted:
                         for event in pygame.event.get():
@@ -914,9 +907,7 @@ class SpaceInvaders:
                         gameDisplay.blit(name_label, (DISPLAY_WIDTH/4 + 55, DISPLAY_HEIGHT/4 + 220))
                         pygame.display.update()
 
-
                     self.highscores.add(name, self.score)
-                    self.highscores.set_hslist
                     self.highscores.save_to_file()
 
                     name = ''
