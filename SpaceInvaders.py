@@ -7,6 +7,7 @@ BASE_PATH = abspath(dirname(__file__))
 IMAGE_PATH = BASE_PATH + '/images/'
 FONT_PATH = BASE_PATH + '/fonts/'
 MUSIC_PATH = BASE_PATH + '/Sounds/'
+
 # colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -17,13 +18,12 @@ YELLOW = (244, 226, 2)
 GREEN = (0, 255, 0)
 
 # game details
-
 FPS = 60
 DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
 
 # other details
-UPGRADE_COUNT = 3
+UPGRADE_COUNT = 5
 ENEMY_DEFAULT_POSITION = 50  # initial value for a new game
 ENEMY_MOVE_DOWN = 10  # how much lower in next round
 SHOOT_FREQ = 1000
@@ -31,13 +31,13 @@ SHOOT_FREQ = 1000
 # stats
 # MAX_BULLETS = 2 # on the screen at the same time (also BASE_BULLETS)
 BASE_HEALTH = 100
-BASE_SPEED = 10
-BASE_DMG = 1
+BASE_SPEED = 8
+BASE_ARMOR = 1
 MAX_BULLETS = 4
 
-
 pygame.init()  # initialize all imported pygame modules
-gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT), pygame.RESIZABLE)  # Initialize a window for display
+gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT),
+                                      pygame.RESIZABLE)  # Initialize a window for display
 pygame.display.set_caption("Space Invaders")
 clock = pygame.time.Clock()
 pygame.mixer.music.load(MUSIC_PATH + "music.mp3")
@@ -45,11 +45,13 @@ icon = pygame.image.load(IMAGE_PATH + 'icon.png')
 pygame.display.set_icon(icon)
 
 global_hslist = []
+DIFFICULTIES = ['Easy', 'Medium', 'Hard']
+SHIP_NAMES = ['Ship1', 'Ship2', 'Ship3']
 
-FONT = FONT_PATH + 'Goodtimes.ttf' # basic font
+FONT = FONT_PATH + 'Goodtimes.ttf'  # basic font
 
 # names of created IMAGES
-IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy2_1','enemy3_1', ]
+IMG_NAMES = ['ship_1', 'bullet_1', 'enemy1_1', 'enemy2_1', 'enemy3_1', ]
 MAPS_NAMES = ['map3', 'map2', 'map1', 'map0']
 
 IMAGES = {name: pygame.image.load(IMAGE_PATH + '{}.png'.format(name)).convert_alpha()
@@ -60,10 +62,12 @@ MAPS = {name: pygame.image.load(IMAGE_PATH + '/maps/' + '{}.png'.format(name)).c
 
 # --------------------Sprites-------------------
 
+
 # main character
 class Ship(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        global BASE_SPEED
         self.image = IMAGES['ship_1']
         self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect(topleft=(DISPLAY_WIDTH / 2 - 35, DISPLAY_HEIGHT - 80))
@@ -88,9 +92,10 @@ class Ship(pygame.sprite.Sprite):
         return bullets
 
     def hit(self, power):
+        global BASE_ARMOR
         dmg = power + 1
         dmg *= 10
-        dmg -= 2*BASE_DMG
+        dmg -= 2 * BASE_ARMOR
         self.health.hp -= dmg
 
 
@@ -192,7 +197,7 @@ class GroupOfEnemies(pygame.sprite.Group):
                 x_min = enemy.rect.x
             if enemy.rect.y > y_max:
                 y_max = enemy.rect.y
-        return x_max+70, x_min, y_max
+        return x_max + 70, x_min, y_max
 
     def add_internal(self, *sprites):
         super(GroupOfEnemies, self).add_internal(*sprites)
@@ -239,7 +244,7 @@ class GroupOfEnemies(pygame.sprite.Group):
                 is_column_dead = self.is_column_dead(self._leftAliveColumn)
 
 
-# Bullet - display and keep information about bullet
+# Bullet - display and keep information about shot bullet
 # direction in constructor depends on who attack
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x_position, y_position, direction, speed, image_name):  # direction -
@@ -261,6 +266,7 @@ class Bullet(pygame.sprite.Sprite):
 class Health(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        global BASE_HEALTH
         self.hp = BASE_HEALTH
 
     def update(self):
@@ -274,20 +280,21 @@ class Health(pygame.sprite.Sprite):
 
 # ---------------------- Menu functions----------------------
 
+
 # not completed
 class Shop:
-    upgrades = (1,1,1,1)
+    upgrades = (1, 1, 1, 1)
     count = UPGRADE_COUNT
 
     def __init__(self):
-        # upgrades = (1,1,1,1)
         self.background = pygame.image.load(IMAGE_PATH + "shop.png").convert()
         self.background = pygame.transform.scale(self.background, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
         gameDisplay.blit(self.background, (0, 0))
+
         self.font = pygame.font.Font(FONT, 25)
         self.index = 0
         self.label0 = self.font.render("HP", True, RED)
-        self.label1 = self.font.render("DMG", True, WHITE)
+        self.label1 = self.font.render("ARMOR", True, WHITE)
         self.label2 = self.font.render("SPEED", True, WHITE)
         self.label3 = self.font.render("BULLETS", True, WHITE)
         self.label4 = self.font.render("Continue", True, ORANGE)
@@ -297,11 +304,11 @@ class Shop:
         self.stat2 = self.font.render(str(self.upgrades[2]), True, WHITE)
         self.stat3 = self.font.render(str(self.upgrades[3]), True, WHITE)
 
-        self.count_label = self.font.render(str(self.count), True, WHITE)
+        self.count_label = pygame.font.Font(FONT, 70).render(str(self.count), True, WHITE)
 
     def shop_upgrade_select(self, index):
         self.label0 = self.font.render("HP", True, WHITE)
-        self.label1 = self.font.render("DMG", True, WHITE)
+        self.label1 = self.font.render("ARMOR", True, WHITE)
         self.label2 = self.font.render("SPEED", True, WHITE)
         self.label3 = self.font.render("BULLETS", True, WHITE)
         self.label4 = self.font.render("Continue", True, ORANGE)
@@ -311,13 +318,13 @@ class Shop:
         self.stat2 = self.font.render(str(self.upgrades[2]), True, WHITE)
         self.stat3 = self.font.render(str(self.upgrades[3]), True, WHITE)
 
-        self.count_label = self.font.render(str(self.count), True, WHITE)
+        self.count_label = pygame.font.Font(FONT, 70).render(str(self.count), True, WHITE)
 
         if index == 0:
             self.label0 = self.font.render("> HP", True, RED)
             self.stat0 = self.font.render(str(self.upgrades[0]) + " +", True, YELLOW)
         elif index == 1:
-            self.label1 = self.font.render("> DMG", True, RED)
+            self.label1 = self.font.render("> ARMOR", True, RED)
             self.stat1 = self.font.render(str(self.upgrades[1]) + " +", True, YELLOW)
         elif index == 2:
             self.label2 = self.font.render("> SPEED", True, RED)
@@ -343,23 +350,24 @@ class Shop:
 
         gameDisplay.blit(self.count_label, (600, 500))
 
-    def add_stat(self,stat):
+    def add_stat(self, stat):
         curr_hp = self.upgrades[0]
-        curr_dmg = self.upgrades[1]
+        curr_armor = self.upgrades[1]
         curr_speed = self.upgrades[2]
         curr_bullets = self.upgrades[3]
 
         if stat == 0:
             curr_hp += 1
         elif stat == 1:
-            curr_dmg += 1
+            curr_armor += 1
         elif stat == 2:
             curr_speed += 1
         elif stat == 3:
             curr_bullets += 1
 
-        self.upgrades = curr_hp, curr_dmg, curr_speed, curr_bullets
+        self.upgrades = curr_hp, curr_armor, curr_speed, curr_bullets
 
+    # TODO: move upgrades somewhere else
     def get_upgrade(self, up_type):
         if up_type == 0:
             return self.upgrades[0]
@@ -369,22 +377,27 @@ class Shop:
             return self.upgrades[2]
         elif up_type == 3:
             return self.upgrades[3]
-        
+
     def reset(self):
         self.upgrades = (1, 1, 1, 1)
 
     def apply_upgrades(self):
-        global BASE_HEALTH, BASE_DMG, BASE_SPEED, MAX_BULLETS
-        BASE_HEALTH = 100 + 10 * self.get_upgrade(0)
-        BASE_DMG = 1 + self.get_upgrade(1)
-        BASE_SPEED = 8 + self.get_upgrade(2)
-        MAX_BULLETS = 2 + 2*(self.get_upgrade(3) - 1)
+        global BASE_HEALTH
+        global BASE_ARMOR
+        global BASE_SPEED
+        global MAX_BULLETS
+
+        BASE_HEALTH = 90 + 10 * self.get_upgrade(0)
+        BASE_ARMOR = -2 + 2 * self.get_upgrade(1)
+        BASE_SPEED = 8 + 3 * self.get_upgrade(2)
+        MAX_BULLETS = 2 * self.get_upgrade(3)
+
 
     def show(self):
         index = 0
-        self.shop_upgrade_select(index)
         self.count = UPGRADE_COUNT
-    
+        self.shop_upgrade_select(index)
+
         while True:
             for event in pygame.event.get():
 
@@ -405,21 +418,13 @@ class Shop:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # other menu choices
                     if index in {0, 1, 2, 3} and self.count > 0:
-                        # curr_hp += 1
                         self.add_stat(index)
-                        self.count -=1
-
-                    # if index == 1:
-                    #     curr_dmg += 1
-                    #
-                    # if index == 2:
-                    #     curr_speed += 1
-                    #
-                    # if index == 3:
-                    #     curr_bullets += 1
+                        self.count -= 1
+                        self.shop_upgrade_select(index)
 
                     if index == 4:
                         gameDisplay.blit(self.background, (0, 0))
+                        self.apply_upgrades()
                         # ship, level = (1, 1)
                         return  # curr_hp, curr_dmg, curr_speed, curr_bullets
 
@@ -427,9 +432,10 @@ class Shop:
             clock.tick(FPS)
 
 
+# highscores
 class Highscore:
     def __init__(self):
-        file = open("highscores.txt","r")
+        file = open("highscores.txt", "r")
         self.hslist = []
 
         f = file.readlines()
@@ -443,7 +449,7 @@ class Highscore:
     # dodanie wyniku do listy
     def add(self, name, score):
         if score > self.hslist[9][1]:
-            self.hslist.append((name,score))
+            self.hslist.append((name, score))
             self.sort_hslist()
             self.hslist = self.hslist[0:-1]
 
@@ -458,13 +464,14 @@ class Highscore:
             name = " ".join(name_segments)
             score = int(s[-1])
             self.hslist.append((name, score))
-    
+
         self.sort_hslist()
 
     # sortowanie po wynikach
     def sort_hslist(self):
         def take_sec(tup):
             return tup[1]
+
         self.hslist.sort(key=take_sec, reverse=True)
 
     # dostęp do listy dla wyświetlania wyników
@@ -473,11 +480,11 @@ class Highscore:
         global_hslist = self.hslist
 
     # zapis do pliku
-    def save_to_file(self):   
-        file = open("highscores.txt","w")
+    def save_to_file(self):
+        file = open("highscores.txt", "w")
         for i in range(10):
             tmp = self.hslist[i]
-            file.write(" ".join((tmp[0],str(tmp[1]),'\n')))
+            file.write(" ".join((tmp[0], str(tmp[1]), '\n')))
         file.close()
 
 
@@ -493,17 +500,16 @@ def newgame_menu_show(background):
 
     font = pygame.font.Font(FONT, 25)
     back_font = pygame.font.Font(FONT, 17)
-    index2 = 0
 
-    ship = 1
-    diff = 1
+    # [row, ship, diff]
+    index2 = [0, 0, 0]
 
     label20 = font.render("Start", True, RED)
     label21 = font.render("Ship", True, WHITE)
     label22 = font.render("Difficulty", True, WHITE)
 
-    ship_select = font.render("< Ship1 >", True, GRAY)
-    diff_select = font.render("< Easy >", True, GRAY)
+    ship_select = font.render(SHIP_NAMES[index2[1]], True, GRAY)
+    diff_select = font.render(DIFFICULTIES[index2[2]], True, GRAY)
 
     back_label = back_font.render("[ESC] - get back", True, ORANGE)
 
@@ -525,21 +531,36 @@ def newgame_menu_show(background):
                 sys.exit()
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                if index2 < 2:
-                    index2 += 1
+                if index2[0] < 2:
+                    index2[0] += 1
                     del sel
-                    sel = menu_select(index2)
+                    sel = menu_select(index2[0])
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-                if index2 > 0:
-                    index2 -= 1
+                if index2[0] > 0:
+                    index2[0] -= 1
                     del sel
-                    sel = menu_select(index2)
+                    sel = menu_select(index2[0])
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
+                if index2[0] == 1 and index2[1] > 0:
+                    index2[1] -= 1
+                if index2[0] == 2 and index2[2] > 0:
+                    index2[2] -= 1
+                del sel
+                sel = menu_select(index2[0])
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+                if index2[0] == 1 and index2[1] < 2:
+                    index2[1] += 1
+                if index2[0] == 2 and index2[2] < 2:
+                    index2[2] += 1
+                del sel
+                sel = menu_select(index2[0])
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                if index2 == 0:
-                    return ship, diff
-
+                if index2[0] == 0:
+                    return index2[1] + 1, index2[2] + 1
             # back
             if event.type == pygame.KEYDOWN and event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                 gameDisplay.fill(BLACK)
@@ -550,8 +571,8 @@ def newgame_menu_show(background):
             label21 = font.render("Ship", True, sel[1])
             label22 = font.render("Difficulty", True, sel[2])
 
-            ship_select = font.render("< Ship1 >", True, sel[3])
-            diff_select = font.render("< Easy >", True, sel[4])
+            ship_select = font.render(SHIP_NAMES[index2[1]], True, sel[3])
+            diff_select = font.render(DIFFICULTIES[index2[2]], True, sel[4])
         del sel
 
         pygame.display.update()
@@ -617,7 +638,7 @@ class MainMenu:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # other menu choices
                     if index == 0:
-                        diff, ship = newgame_menu_show(self.background)
+                        ship, diff = newgame_menu_show(self.background)
                         if diff != (-1):
                             return
                         self.menu_option_select(index)
@@ -654,8 +675,8 @@ class MainMenu:
         while True:
             gameDisplay.blit(self.background, (0, 0))
             for i in range(10):
-                gameDisplay.blit(name_labels[i], (100, 300+35*i))
-                gameDisplay.blit(score_labels[i], (600, 300+35*i))
+                gameDisplay.blit(name_labels[i], (100, 300 + 35 * i))
+                gameDisplay.blit(score_labels[i], (600, 300 + 35 * i))
             gameDisplay.blit(back_label, (10, 730))
 
             for event in pygame.event.get():
@@ -756,7 +777,7 @@ class SpaceInvaders:
         self.gameOverText = self.font.render("Game Over", True, RED)
 
         self.nextRoundText = self.font.render('Next Round', True, WHITE)
-        self.scoreText = self.font.render("Score:"+str(self.score), True, GREEN)
+        self.scoreText = self.font.render("Score:" + str(self.score), True, GREEN)
 
     def make_enemies(self):
         enemies = GroupOfEnemies(self.enemiesRows, self.enemiesCols, self.current_lvl)
@@ -785,14 +806,14 @@ class SpaceInvaders:
         pygame.font.Font(FONT, 40).render("SELECT MAP" + str(self.score), True, ORANGE)
 
         while True:
-            map = pygame.transform.scale(MAPS['map'+str(index)], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+            map = pygame.transform.scale(MAPS['map' + str(index)], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
             gameDisplay.blit(map, (0, 0))
             gameDisplay.blit(map_label.render('Map ' + str(index + 1), True, RED),
-                             (DISPLAY_WIDTH/2-110, DISPLAY_HEIGHT/2 - 40))
+                             (DISPLAY_WIDTH / 2 - 110, DISPLAY_HEIGHT / 2 - 40))
 
             gameDisplay.blit(select_label, (200, 70))
-            gameDisplay.blit(left_arrow_label, (DISPLAY_WIDTH/2-240, DISPLAY_HEIGHT/2 - 50))
-            gameDisplay.blit(right_arrow_label, (DISPLAY_WIDTH/2+190, DISPLAY_HEIGHT / 2 - 50))
+            gameDisplay.blit(left_arrow_label, (DISPLAY_WIDTH / 2 - 240, DISPLAY_HEIGHT / 2 - 50))
+            gameDisplay.blit(right_arrow_label, (DISPLAY_WIDTH / 2 + 190, DISPLAY_HEIGHT / 2 - 50))
 
             pygame.display.update()
 
@@ -807,7 +828,7 @@ class SpaceInvaders:
                     if event.key in [pygame.K_RIGHT] and index < maps_no - 1:
                         index += 1
                     if event.key in [pygame.K_RETURN]:
-                        return pygame.transform.scale(MAPS['map'+str(index)], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+                        return pygame.transform.scale(MAPS['map' + str(index)], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
             clock.tick(FPS)
 
@@ -822,7 +843,7 @@ class SpaceInvaders:
             self.enemies_shoot_timer = pygame.time.get_ticks()
 
     def calculate_score(self, row):
-            self.score += + 10 * (self.enemiesRows - row)
+        self.score += + 10 * (self.enemiesRows - row)
 
     def check_collisions(self):
         pygame.sprite.groupcollide(self.bullets, self.enemyBullets, True, True)
@@ -845,6 +866,12 @@ class SpaceInvaders:
             self.gameOver = True
 
     def reset(self):
+        global BASE_HEALTH, BASE_SPEED, BASE_ARMOR, MAX_BULLETS
+        BASE_HEALTH = 100
+        BASE_SPEED = 8
+        BASE_ARMOR = 1
+        MAX_BULLETS = 4
+
         self.ship = Ship()
         self.shipGroup = pygame.sprite.Group(self.ship)
         self.bullets = pygame.sprite.Group()
@@ -853,104 +880,102 @@ class SpaceInvaders:
         self.allSprites = pygame.sprite.Group(self.shipGroup, self.enemies)
 
     def main(self):
-            self.menu.show()
-            map = self.select_map()
+        self.menu.show()
+        map = self.select_map()
 
-            # upgrades = (1,1,1,1)
-            while True:
-                # game over
-                if self.gameOver:
-                    self.gameOver = False
+        # upgrades = (1,1,1,1)
+        while True:
+            # game over
+            if self.gameOver:
+                self.gameOver = False
 
-                    s = pygame.Surface((DISPLAY_WIDTH, DISPLAY_HEIGHT), pygame.SRCALPHA)
-                    s.fill((255, 255, 255, 80))
-                    gameDisplay.blit(s, (0, 0))
+                s = pygame.Surface((DISPLAY_WIDTH, DISPLAY_HEIGHT), pygame.SRCALPHA)
+                s.fill((255, 255, 255, 80))
+                gameDisplay.blit(s, (0, 0))
 
-                    gameDisplay.blit(self.gameOverText, (DISPLAY_WIDTH/4 - 75, DISPLAY_HEIGHT/4))
-                    score_label = pygame.font.Font(FONT, 40).render("Your Score: " + str(self.score), True, ORANGE)
-                    gameDisplay.blit(score_label, (DISPLAY_WIDTH/4 + 55, DISPLAY_HEIGHT/4 + 150))
+                gameDisplay.blit(self.gameOverText, (DISPLAY_WIDTH / 4 - 75, DISPLAY_HEIGHT / 4))
+                score_label = pygame.font.Font(FONT, 40).render("Your Score: " + str(self.score), True, ORANGE)
+                gameDisplay.blit(score_label, (DISPLAY_WIDTH / 4 + 55, DISPLAY_HEIGHT / 4 + 150))
 
-                    pygame.display.update()
-
-                    # score input
-                    input_box = pygame.Rect((DISPLAY_WIDTH/4 + 50, DISPLAY_HEIGHT/4 + 220), (470, 50))
-                    
-                    name = ''
-                    name_length = len(name)
-                    name_label = pygame.font.Font(FONT, 40).render(name, True, WHITE)
-                    submitted = False
-                    pygame.draw.rect(self.screen, (255, 255, 255, 80), input_box)
-
-                    while not submitted:
-                        for event in pygame.event.get():
-                            if event.type == pygame.QUIT:
-                                pygame.quit()
-                                sys.exit()
-                                
-                            if event.type == pygame.KEYDOWN:
-                                    if event.key == pygame.K_RETURN:
-                                        print(name)
-                                        
-                                        submitted = True
-
-                                    elif event.key == pygame.K_BACKSPACE:
-                                        name = name[:-1]
-                                        name_length = len(name)
-
-                                    else:
-                                        if name_length < 12:
-                                            name += event.unicode
-                                            name_length = len(name)
-
-                        name_label = pygame.font.Font(FONT, 40).render(name, True, WHITE)
-                        pygame.draw.rect(self.screen, GREEN, input_box)
-                        gameDisplay.blit(name_label, (DISPLAY_WIDTH/4 + 55, DISPLAY_HEIGHT/4 + 220))
-                        pygame.display.update()
-
-                    self.highscores.add(name, self.score)
-                    self.highscores.save_to_file()
-
-                    name = ''
-                    name_length = len(name)
-
-                    self.score = 0
-                    self.current_lvl = 0
-                    self.reset()
-                    self.shop.reset()
-
-                    pygame.time.wait(1000)
-                    self.menu.show()
-
-                if self.nextRound:
-                    gameDisplay.blit(self.nextRoundText, (DISPLAY_WIDTH / 4 - 100, DISPLAY_HEIGHT / 4))
-                    pygame.display.update()
-                    pygame.time.wait(2000)
-                    self.current_lvl += 1
-                    self.reset()
-                    self.nextRound = False
-                    self.shop.show()
-
-                gameDisplay.blit(map, (0, 0))  # map load
-                self.scoreText = self.scoreFont.render("Score:  " + str(self.score), True, GREEN)
-                gameDisplay.blit(self.scoreText, (10, 10))
-                keys = pygame.key.get_pressed()
-
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        sys.exit()
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE:
-                            self.bullets = self.ship.shoot(self.bullets)
-                            self.allSprites.add(self.bullets)
-
-                self.check_collisions()
-                self.allSprites.update(keys, pygame.time.get_ticks())
-                self.enemies.update(pygame.time.get_ticks())
-                self.timer = pygame.time.get_ticks()
-                self.make_enemies_shoot()
                 pygame.display.update()
-                clock.tick(FPS)
+
+                # score input
+                input_box = pygame.Rect((DISPLAY_WIDTH / 4 + 50, DISPLAY_HEIGHT / 4 + 220), (470, 50))
+
+                name = ''
+                name_length = len(name)
+                name_label = pygame.font.Font(FONT, 40).render(name, True, WHITE)
+                submitted = False
+                pygame.draw.rect(self.screen, GREEN, input_box)
+
+                while not submitted:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
+
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_RETURN:
+                                submitted = True
+
+                            elif event.key == pygame.K_BACKSPACE:
+                                name = name[:-1]
+                                name_length = len(name)
+
+                            else:
+                                if name_length < 12:
+                                    name += event.unicode
+                                    name_length = len(name)
+
+                    name_label = pygame.font.Font(FONT, 40).render(name, True, WHITE)
+                    pygame.draw.rect(self.screen, GREEN, input_box)
+                    gameDisplay.blit(name_label, (DISPLAY_WIDTH / 4 + 55, DISPLAY_HEIGHT / 4 + 220))
+                    pygame.display.update()
+
+                self.highscores.add(name, self.score)
+                self.highscores.save_to_file()
+
+                name = ''
+                name_length = len(name)
+
+                self.score = 0
+                self.current_lvl = 0
+                self.reset()
+                self.shop.reset()
+
+                pygame.time.wait(1000)
+                self.menu.show()
+
+            if self.nextRound:
+                gameDisplay.blit(self.nextRoundText, (DISPLAY_WIDTH / 4 - 100, DISPLAY_HEIGHT / 4))
+                pygame.display.update()
+                pygame.time.wait(2000)
+                self.current_lvl += 1
+                self.reset()
+                self.nextRound = False
+                self.shop.show()
+
+            gameDisplay.blit(map, (0, 0))  # map load
+            self.scoreText = self.scoreFont.render("Score:  " + str(self.score), True, GREEN)
+            gameDisplay.blit(self.scoreText, (10, 10))
+            keys = pygame.key.get_pressed()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.bullets = self.ship.shoot(self.bullets)
+                        self.allSprites.add(self.bullets)
+
+            self.check_collisions()
+            self.allSprites.update(keys, pygame.time.get_ticks())
+            self.enemies.update(pygame.time.get_ticks())
+            self.timer = pygame.time.get_ticks()
+            self.make_enemies_shoot()
+            pygame.display.update()
+            clock.tick(FPS)
 
 
 if __name__ == '__main__':
